@@ -1,8 +1,6 @@
-'use client';
-
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { User, Target, Clock, AlertTriangle, Settings, ChevronRight, Sparkles } from 'lucide-react';
-import type { UserProfile } from '@/types';
+import type { UserProfile } from '../../../App';
 
 interface ProfileScreenProps {
   profile: UserProfile;

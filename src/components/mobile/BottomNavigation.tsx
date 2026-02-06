@@ -1,7 +1,5 @@
-'use client';
-
 import { Home, TreeDeciduous, BarChart3, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 type Screen = 'home' | 'techTree' | 'progress' | 'profile';
 

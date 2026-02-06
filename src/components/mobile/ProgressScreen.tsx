@@ -1,8 +1,7 @@
-'use client';
-
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { TrendingUp, Target, Flame, Calendar, Award } from 'lucide-react';
-import type { UserProfile } from '@/types';
+import type { UserProfile } from '../../../App';
+import YearProgressWidget from './widgets/YearProgressWidget';
 
 interface ProgressScreenProps {
   profile: UserProfile;
@@ -92,6 +91,16 @@ export default function ProgressScreen({
           <p className="text-sm text-gray-500">목표까지</p>
         </motion.div>
       </div>
+
+      {/* Year Progress Widget */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        className="mb-6"
+      >
+        <YearProgressWidget />
+      </motion.div>
 
       {/* Weekly Progress */}
       <motion.div

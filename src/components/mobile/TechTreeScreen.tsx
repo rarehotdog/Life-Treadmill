@@ -1,8 +1,6 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { Trophy, Lock, Flower2, Apple, Sprout } from 'lucide-react';
-import type { UserProfile } from '@/types';
+import { motion } from 'motion/react';
+import { Trophy, Lock } from 'lucide-react';
+import type { UserProfile } from '../../../App';
 
 interface TechTreeScreenProps {
   profile: UserProfile;
@@ -51,17 +49,6 @@ export default function TechTreeScreen({ profile }: TechTreeScreenProps) {
         ],
       },
     ],
-  };
-
-  const getStatusIcon = (status: TreeNode['status']) => {
-    switch (status) {
-      case 'completed':
-        return <Apple className="w-5 h-5 text-emerald-500" />;
-      case 'in_progress':
-        return <Flower2 className="w-5 h-5 text-yellow-500" />;
-      case 'locked':
-        return <Lock className="w-4 h-4 text-gray-400" />;
-    }
   };
 
   const getStatusEmoji = (status: TreeNode['status']) => {

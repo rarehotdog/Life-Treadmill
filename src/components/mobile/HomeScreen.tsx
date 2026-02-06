@@ -1,8 +1,7 @@
-'use client';
-
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Flame, CheckCircle2, Circle, Sparkles, ChevronRight } from 'lucide-react';
-import type { UserProfile, Quest } from '@/types';
+import type { UserProfile, Quest } from '../../../App';
+import GitHubContributionChart from './widgets/GitHubContributionChart';
 
 interface HomeScreenProps {
   profile: UserProfile;
@@ -80,6 +79,17 @@ export default function HomeScreen({
           <span className="text-emerald-100">예상 목표 달성</span>
           <span className="font-medium">{profile.estimatedGoalDate}</span>
         </div>
+      </motion.div>
+
+      {/* GitHub-style Contribution Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-2xl p-4 border border-gray-100 mb-6"
+      >
+        <h3 className="font-semibold text-gray-900 mb-3">활동 기록</h3>
+        <GitHubContributionChart />
       </motion.div>
 
       {/* Today's Quests */}
