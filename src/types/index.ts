@@ -1,28 +1,32 @@
-// User Types
-export interface User {
-  id: string;
-  email: string;
+// User Profile Types
+export interface UserProfile {
+  id?: string;
   name: string;
-  created_at: string;
-}
-
-// Goal Types
-export interface Goal {
-  id: string;
-  user_id: string;
-  title: string;
+  goal: string;
   deadline: string;
-  routine_time: 'morning' | 'evening';
-  constraints: GoalConstraints;
-  tech_tree: TechTree;
-  created_at: string;
+  routineTime: 'morning' | 'evening';
+  constraints: string;
+  currentDay: number;
+  streak: number;
+  weeklyCompletion: number;
+  estimatedGoalDate: string;
+  joinedDate: string;
+  daysUntilDeadline?: number;
 }
 
-export interface GoalConstraints {
-  time_per_day: string;
-  energy_level: 'low' | 'medium' | 'high';
-  budget?: string;
-  environment?: string;
+// Quest Types
+export interface Quest {
+  id: string;
+  title: string;
+  duration: string;
+  completed: boolean;
+  alternative?: string;
+  timeOfDay: 'morning' | 'afternoon' | 'evening';
+  description?: string;
+  goal_id?: string;
+  why?: string;
+  status?: 'pending' | 'completed' | 'failed' | 'skipped';
+  scheduled_date?: string;
 }
 
 // Tech Tree Types
@@ -42,19 +46,23 @@ export interface TechTreeNode {
   position?: { x: number; y: number };
 }
 
-// Quest Types
-export interface Quest {
+// Goal Types (legacy support)
+export interface Goal {
   id: string;
-  goal_id: string;
+  user_id: string;
   title: string;
-  description: string;
-  why?: string;
-  estimated_time: string;
-  status: 'pending' | 'completed' | 'failed' | 'skipped';
-  scheduled_date: string;
-  completed_at?: string;
-  failure_reason?: string;
-  alternative?: Quest;
+  deadline: string;
+  routine_time: 'morning' | 'evening';
+  constraints: GoalConstraints;
+  tech_tree: TechTree;
+  created_at: string;
+}
+
+export interface GoalConstraints {
+  time_per_day: string;
+  energy_level: 'low' | 'medium' | 'high';
+  budget?: string;
+  environment?: string;
 }
 
 // Context Log Types
@@ -75,10 +83,10 @@ export interface ContextMetadata {
 
 // Onboarding Types
 export interface OnboardingData {
+  name: string;
   goal: string;
   deadline: string;
-  routine_time: 'morning' | 'evening';
-  existing_progress?: string;
+  routineTime: 'morning' | 'evening';
   constraints: string;
 }
 
@@ -101,3 +109,6 @@ export interface FutureSelfImage {
   image_url: string;
   created_at: string;
 }
+
+// Screen Types
+export type Screen = 'onboarding' | 'home' | 'techTree' | 'progress' | 'profile';
