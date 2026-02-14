@@ -10,6 +10,7 @@ import BottomNavigation from './components/mobile/BottomNavigation';
 import FailureSheet, { type FailureResolutionMeta } from './components/mobile/FailureSheet';
 import EnergyCheckIn from './components/mobile/EnergyCheckIn';
 import ShareCard from './components/mobile/ShareCard';
+import FutureSelfVisualizer from './components/mobile/FutureSelfVisualizer';
 import LevelUpModal from './components/gamification/LevelUpModal';
 import { BadgeUnlockModal } from './components/gamification/BadgeDisplay';
 import {
@@ -101,6 +102,8 @@ export default function App() {
   const [isEnergyOpen, setIsEnergyOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [energy, setEnergy] = useState<number | undefined>(undefined);
+  const [isFutureSelfOpen, setIsFutureSelfOpen] = useState(false);
+  const [futureSelfPrompt, setFutureSelfPrompt] = useState('');
 
   // ── Load state ──
   useEffect(() => {
@@ -109,6 +112,7 @@ export default function App() {
     const savedTree = localStorage.getItem('ltr_techTree');
     const customized = localStorage.getItem('ltr_customized');
     const savedEnergy = localStorage.getItem('ltr_energyToday');
+    const savedFutureSelfPrompt = localStorage.getItem('ltr_futureSelfPrompt');
 
     if (savedProfile) {
       const profile = JSON.parse(savedProfile);
@@ -133,6 +137,9 @@ export default function App() {
       } else if (savedEnergy) {
         setEnergy(parseInt(savedEnergy));
       }
+      if (savedFutureSelfPrompt) {
+        setFutureSelfPrompt(savedFutureSelfPrompt);
+      }
 
       if (isGeminiConfigured()) loadAIInsight(profile);
     } else {
@@ -150,6 +157,9 @@ export default function App() {
       };
       setUserProfile(defaultProfile);
       setDefaultQuests(defaultProfile);
+      if (savedFutureSelfPrompt) {
+        setFutureSelfPrompt(savedFutureSelfPrompt);
+      }
     }
 
     if (savedTree) {
@@ -486,6 +496,8 @@ export default function App() {
               energy={energy}
               onOpenShare={() => setIsShareOpen(true)}
               onOpenEnergy={() => setIsEnergyOpen(true)}
+              onOpenFutureSelf={() => setIsFutureSelfOpen(true)}
+              futureSelfPrompt={futureSelfPrompt}
             />
           </motion.div>
         )}
@@ -525,6 +537,19 @@ export default function App() {
             isOpen={isEnergyOpen}
             onClose={() => setIsEnergyOpen(false)}
             onSubmit={handleEnergySubmit}
+          />
+          <FutureSelfVisualizer
+            isOpen={isFutureSelfOpen}
+            onClose={() => setIsFutureSelfOpen(false)}
+            userName={userProfile.name}
+            goal={userProfile.goal}
+            initialPrompt={futureSelfPrompt}
+            onSave={(prompt) => {
+              setFutureSelfPrompt(prompt);
+              localStorage.setItem('ltr_futureSelfPrompt', prompt);
+              setAiMessage('미래 자아 비전 카드가 저장됐어요 ✨');
+              setTimeout(() => setAiMessage(null), 2500);
+            }}
           />
           <ShareCard
             isOpen={isShareOpen}

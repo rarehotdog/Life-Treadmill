@@ -20,6 +20,8 @@ interface HomeScreenProps {
   energy?: number;
   onOpenShare?: () => void;
   onOpenEnergy?: () => void;
+  onOpenFutureSelf?: () => void;
+  futureSelfPrompt?: string;
 }
 
 export default function HomeScreen({
@@ -36,6 +38,8 @@ export default function HomeScreen({
   energy,
   onOpenShare,
   onOpenEnergy,
+  onOpenFutureSelf,
+  futureSelfPrompt,
 }: HomeScreenProps) {
   const today = new Date();
   const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][today.getDay()];
@@ -75,7 +79,10 @@ export default function HomeScreen({
               <Share2 className="w-[16px] h-[16px] text-gray-600" />
             </button>
           )}
-          <button className="w-9 h-9 bg-white rounded-xl border border-[#E5E7EB] flex items-center justify-center">
+          <button
+            onClick={onOpenFutureSelf}
+            className="w-9 h-9 bg-white rounded-xl border border-[#E5E7EB] flex items-center justify-center"
+          >
             <Plus className="w-[18px] h-[18px] text-gray-600" />
           </button>
         </div>
@@ -162,6 +169,9 @@ export default function HomeScreen({
             <p className="text-13 text-[#6B7280] leading-relaxed">
               목표: <span className="font-medium text-gray-900">{profile.goal}</span> · 제약: <span className="font-medium text-gray-900">{profile.constraints}</span> · 에너지: <span className="font-medium text-gray-900">{energy ? `${energy}/5` : '미체크'}</span>
             </p>
+            {futureSelfPrompt && (
+              <p className="text-12 text-[#9CA3AF] mt-2">Future Self: {futureSelfPrompt}</p>
+            )}
             {recentFailurePattern && (
               <p className="text-12 text-[#9CA3AF] mt-2">
                 최근 실패 패턴: {recentFailurePattern}
