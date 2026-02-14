@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Circle, CheckCircle2, Plus, ChevronRight, Sparkles, X, Share2, Layers3, BrainCircuit, PlayCircle, Clock3, RefreshCw } from 'lucide-react';
+import { Circle, CheckCircle2, Plus, ChevronRight, Sparkles, X, Share2, Layers3, BrainCircuit, PlayCircle, Clock3, RefreshCw, Mic } from 'lucide-react';
 import type { UserProfile, Quest } from '../../App';
 import type { UserStats } from '../../lib/gamification';
 import Tready from '../character/Tready';
@@ -22,6 +22,8 @@ interface HomeScreenProps {
   onOpenEnergy?: () => void;
   onOpenFutureSelf?: () => void;
   futureSelfPrompt?: string;
+  onOpenVoiceCheckIn?: () => void;
+  latestVoiceCheckIn?: string;
 }
 
 export default function HomeScreen({
@@ -40,6 +42,8 @@ export default function HomeScreen({
   onOpenEnergy,
   onOpenFutureSelf,
   futureSelfPrompt,
+  onOpenVoiceCheckIn,
+  latestVoiceCheckIn,
 }: HomeScreenProps) {
   const today = new Date();
   const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][today.getDay()];
@@ -74,6 +78,11 @@ export default function HomeScreen({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {onOpenVoiceCheckIn && (
+            <button onClick={onOpenVoiceCheckIn} className="w-9 h-9 bg-white rounded-xl border border-[#E5E7EB] flex items-center justify-center">
+              <Mic className="w-[16px] h-[16px] text-gray-600" />
+            </button>
+          )}
           {onOpenShare && (
             <button onClick={onOpenShare} className="w-9 h-9 bg-white rounded-xl border border-[#E5E7EB] flex items-center justify-center">
               <Share2 className="w-[16px] h-[16px] text-gray-600" />
@@ -169,6 +178,9 @@ export default function HomeScreen({
             <p className="text-13 text-[#6B7280] leading-relaxed">
               목표: <span className="font-medium text-gray-900">{profile.goal}</span> · 제약: <span className="font-medium text-gray-900">{profile.constraints}</span> · 에너지: <span className="font-medium text-gray-900">{energy ? `${energy}/5` : '미체크'}</span>
             </p>
+            {latestVoiceCheckIn && (
+              <p className="text-12 text-[#9CA3AF] mt-2">최근 체크인: {latestVoiceCheckIn}</p>
+            )}
             {futureSelfPrompt && (
               <p className="text-12 text-[#9CA3AF] mt-2">Future Self: {futureSelfPrompt}</p>
             )}

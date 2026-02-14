@@ -11,6 +11,7 @@ import FailureSheet, { type FailureResolutionMeta } from './components/mobile/Fa
 import EnergyCheckIn from './components/mobile/EnergyCheckIn';
 import ShareCard from './components/mobile/ShareCard';
 import FutureSelfVisualizer from './components/mobile/FutureSelfVisualizer';
+import VoiceCheckIn from './components/mobile/VoiceCheckIn';
 import LevelUpModal from './components/gamification/LevelUpModal';
 import { BadgeUnlockModal } from './components/gamification/BadgeDisplay';
 import {
@@ -78,6 +79,11 @@ interface FailureLogEntry {
   energy?: number;
 }
 
+interface VoiceCheckInEntry {
+  text: string;
+  createdAt: string;
+}
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -104,6 +110,8 @@ export default function App() {
   const [energy, setEnergy] = useState<number | undefined>(undefined);
   const [isFutureSelfOpen, setIsFutureSelfOpen] = useState(false);
   const [futureSelfPrompt, setFutureSelfPrompt] = useState('');
+  const [isVoiceCheckInOpen, setIsVoiceCheckInOpen] = useState(false);
+  const [latestVoiceCheckIn, setLatestVoiceCheckIn] = useState<VoiceCheckInEntry | null>(null);
 
   // ── Load state ──
   useEffect(() => {
@@ -113,6 +121,7 @@ export default function App() {
     const customized = localStorage.getItem('ltr_customized');
     const savedEnergy = localStorage.getItem('ltr_energyToday');
     const savedFutureSelfPrompt = localStorage.getItem('ltr_futureSelfPrompt');
+    const savedVoiceCheckIn = localStorage.getItem('ltr_voiceCheckIn');
 
     if (savedProfile) {
       const profile = JSON.parse(savedProfile);
@@ -140,6 +149,9 @@ export default function App() {
       if (savedFutureSelfPrompt) {
         setFutureSelfPrompt(savedFutureSelfPrompt);
       }
+      if (savedVoiceCheckIn) {
+        try { setLatestVoiceCheckIn(JSON.parse(savedVoiceCheckIn)); } catch { /* ignore */ }
+      }
 
       if (isGeminiConfigured()) loadAIInsight(profile);
     } else {
@@ -159,6 +171,9 @@ export default function App() {
       setDefaultQuests(defaultProfile);
       if (savedFutureSelfPrompt) {
         setFutureSelfPrompt(savedFutureSelfPrompt);
+      }
+      if (savedVoiceCheckIn) {
+        try { setLatestVoiceCheckIn(JSON.parse(savedVoiceCheckIn)); } catch { /* ignore */ }
       }
     }
 
@@ -498,6 +513,8 @@ export default function App() {
               onOpenEnergy={() => setIsEnergyOpen(true)}
               onOpenFutureSelf={() => setIsFutureSelfOpen(true)}
               futureSelfPrompt={futureSelfPrompt}
+              onOpenVoiceCheckIn={() => setIsVoiceCheckInOpen(true)}
+              latestVoiceCheckIn={latestVoiceCheckIn?.text}
             />
           </motion.div>
         )}
@@ -548,6 +565,17 @@ export default function App() {
               setFutureSelfPrompt(prompt);
               localStorage.setItem('ltr_futureSelfPrompt', prompt);
               setAiMessage('미래 자아 비전 카드가 저장됐어요 ✨');
+              setTimeout(() => setAiMessage(null), 2500);
+            }}
+          />
+          <VoiceCheckIn
+            isOpen={isVoiceCheckInOpen}
+            onClose={() => setIsVoiceCheckInOpen(false)}
+            initialText={latestVoiceCheckIn?.text}
+            onSave={(entry) => {
+              setLatestVoiceCheckIn(entry);
+              localStorage.setItem('ltr_voiceCheckIn', JSON.stringify(entry));
+              setAiMessage('음성 체크인이 저장됐어요 🎙️');
               setTimeout(() => setAiMessage(null), 2500);
             }}
           />
