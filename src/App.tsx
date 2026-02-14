@@ -166,6 +166,7 @@ export default function App() {
   }, []);
 
   // ── Load state ──
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const savedProfile = localStorage.getItem('ltr_profile');
     const savedQuests = localStorage.getItem('ltr_quests');
@@ -188,7 +189,7 @@ export default function App() {
       } else if (savedQuests) {
         setTodayQuests(JSON.parse(savedQuests));
       } else {
-        setDefaultQuests(profile);
+        setDefaultQuests();
       }
 
       // Show energy check-in if not done today
@@ -220,7 +221,7 @@ export default function App() {
         joinedDate: new Date().toISOString().split('T')[0],
       };
       setUserProfile(defaultProfile);
-      setDefaultQuests(defaultProfile);
+      setDefaultQuests();
       if (savedFutureSelfPrompt) {
         setFutureSelfPrompt(savedFutureSelfPrompt);
       }
@@ -235,6 +236,7 @@ export default function App() {
 
     setIsLoading(false);
   }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // ── Helpers ──
   const loadAIInsight = async (profile: UserProfile) => {
@@ -254,12 +256,12 @@ export default function App() {
       const aiQuests = await generatePersonalizedQuests(profile, techTree);
       if (aiQuests && aiQuests.length > 0) {
         persistTodayQuests(adaptQuestsForContext(aiQuests));
-      } else setDefaultQuests(profile);
-    } catch { setDefaultQuests(profile); }
+      } else setDefaultQuests();
+    } catch { setDefaultQuests(); }
     finally { setIsGeneratingQuests(false); }
   };
 
-  const setDefaultQuests = (_profile: UserProfile) => {
+  const setDefaultQuests = () => {
     const quests: Quest[] = [
       { id: '1', title: '오늘의 목표 설정하기', duration: '5분', completed: false, timeOfDay: 'morning', description: '하루를 시작하기 전 목표를 정해보세요' },
       { id: '2', title: '집중 시간 갖기', duration: '25분', completed: false, timeOfDay: 'afternoon', description: '포모도로 타이머로 집중해보세요' },
@@ -295,7 +297,8 @@ export default function App() {
   }, [earnedBadgeIds, levelUpInfo]);
 
   // ── Energy check ──
-  const handleEnergySubmit = (energyLevel: number, _mood: string) => {
+  const handleEnergySubmit = (energyLevel: number, mood: string) => {
+    void mood;
     setEnergy(energyLevel);
     localStorage.setItem('ltr_energyToday', String(energyLevel));
     localStorage.setItem('ltr_energyDate', new Date().toISOString().split('T')[0]);
@@ -326,7 +329,7 @@ export default function App() {
         ]);
         if (aiQuests?.length) {
           persistTodayQuests(adaptQuestsForContext(aiQuests));
-        } else setDefaultQuests(newProfile);
+        } else setDefaultQuests();
         if (aiTree) {
           setTechTree(aiTree);
           localStorage.setItem('ltr_techTree', JSON.stringify(aiTree));
@@ -334,9 +337,9 @@ export default function App() {
         }
         if (insight) setAiMessage(insight);
         else setAiMessage('AI가 맞춤 퀘스트를 생성했어요! 🎯');
-      } catch { setDefaultQuests(newProfile); }
+      } catch { setDefaultQuests(); }
       finally { setIsGeneratingQuests(false); setTimeout(() => setAiMessage(null), 5000); }
-    } else setDefaultQuests(newProfile);
+    } else setDefaultQuests();
   };
 
   // ── Regenerate quests ──

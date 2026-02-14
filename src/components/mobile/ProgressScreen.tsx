@@ -17,7 +17,7 @@ interface ProgressScreenProps {
 
 export default function ProgressScreen({
   profile,
-  completionRate: _completionRate,
+  completionRate,
   completedCount,
   totalCount,
   stats,
@@ -96,6 +96,7 @@ export default function ProgressScreen({
       <div className="mb-4">
         <h1 className="text-28 font-bold text-gray-900 tracking-tight-custom leading-tight">Progress</h1>
         <p className="text-14 text-[#9CA3AF] mt-0.5">당신의 성장을 확인하세요</p>
+        <p className="text-12 text-[#6B7280] mt-1">오늘 완료율 {completionRate.toFixed(1)}%</p>
       </div>
 
       {/* ── Stats Grid ── */}
