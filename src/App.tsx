@@ -152,11 +152,12 @@ export default function App() {
   const [isVoiceCheckInOpen, setIsVoiceCheckInOpen] = useState(false);
   const [latestVoiceCheckIn, setLatestVoiceCheckIn] = useState<VoiceCheckInEntry | null>(null);
 
-  const adaptQuestsForContext = useCallback((inputQuests: Quest[]): Quest[] => {
+  const adaptQuestsForContext = useCallback((inputQuests: Quest[], voiceTextOverride?: string): Quest[] => {
     if (!inputQuests.length) return inputQuests;
 
     const explicitEnergy = energy;
-    const voiceHint = latestVoiceCheckIn?.text ? extractVoiceEnergyHint(latestVoiceCheckIn.text) : undefined;
+    const voiceSource = voiceTextOverride ?? latestVoiceCheckIn?.text;
+    const voiceHint = voiceSource ? extractVoiceEnergyHint(voiceSource) : undefined;
     const effectiveEnergy = explicitEnergy ?? voiceHint;
     const isLowEnergyMode = typeof effectiveEnergy === 'number' && effectiveEnergy <= 2;
 
@@ -188,13 +189,38 @@ export default function App() {
     if (isSupabaseConfigured()) saveQuests(quests);
   }, []);
 
-  const getQuestGenerationContext = useCallback((): QuestGenerationContext => {
+  const getQuestGenerationContext = useCallback((voiceTextOverride?: string): QuestGenerationContext => {
     return {
       energy,
-      voiceCheckIn: latestVoiceCheckIn?.text,
+      voiceCheckIn: voiceTextOverride ?? latestVoiceCheckIn?.text,
       recentFailurePattern: getRecentFailurePatternLabel(),
     };
   }, [energy, latestVoiceCheckIn]);
+
+  const refreshNextQuestFromVoiceContext = useCallback(async (
+    profile: UserProfile,
+    currentQuests: Quest[],
+    voiceText: string
+  ): Promise<boolean> => {
+    if (!isGeminiConfigured()) return false;
+    const targetIndex = currentQuests.findIndex((q) => !q.completed);
+    if (targetIndex < 0) return false;
+
+    const aiQuests = await generatePersonalizedQuests(profile, techTree, getQuestGenerationContext(voiceText));
+    if (!aiQuests?.length) return false;
+
+    const replacementSource = aiQuests[0];
+    const updated = [...currentQuests];
+    const targetQuest = updated[targetIndex];
+    updated[targetIndex] = {
+      ...replacementSource,
+      id: targetQuest.id,
+      completed: false,
+    };
+
+    persistTodayQuests(adaptQuestsForContext(updated, voiceText));
+    return true;
+  }, [techTree, getQuestGenerationContext, persistTodayQuests, adaptQuestsForContext]);
 
   // ── Load state ──
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -645,13 +671,25 @@ export default function App() {
             isOpen={isVoiceCheckInOpen}
             onClose={() => setIsVoiceCheckInOpen(false)}
             initialText={latestVoiceCheckIn?.text}
-            onSave={(entry) => {
+            onSave={async (entry) => {
               setLatestVoiceCheckIn(entry);
               localStorage.setItem('ltr_voiceCheckIn', JSON.stringify(entry));
-              const adjusted = adaptQuestsForContext(todayQuests);
+              const adjusted = adaptQuestsForContext(todayQuests, entry.text);
               persistTodayQuests(adjusted);
-              setAiMessage('음성 체크인이 저장됐어요 🎙️');
-              setTimeout(() => setAiMessage(null), 2500);
+
+              if (userProfile && isGeminiConfigured()) {
+                setAiMessage('체크인을 반영해 다음 퀘스트를 조정하고 있어요...');
+                try {
+                  const replaced = await refreshNextQuestFromVoiceContext(userProfile, adjusted, entry.text);
+                  setAiMessage(replaced ? '음성 맥락을 반영해 다음 퀘스트를 업데이트했어요 🎯' : '음성 체크인이 저장됐어요 🎙️');
+                } catch {
+                  setAiMessage('음성 체크인이 저장됐어요 🎙️');
+                }
+                setTimeout(() => setAiMessage(null), 3000);
+              } else {
+                setAiMessage('음성 체크인이 저장됐어요 🎙️');
+                setTimeout(() => setAiMessage(null), 2500);
+              }
             }}
           />
           <ShareCard
