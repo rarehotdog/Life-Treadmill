@@ -18,6 +18,7 @@ import {
   generateTechTree,
   getAIInsight,
   isGeminiConfigured,
+  type QuestGenerationContext,
   type TechTreeResponse,
 } from './lib/gemini';
 import {
@@ -104,6 +105,26 @@ function extractVoiceEnergyHint(text: string): number | undefined {
   return undefined;
 }
 
+function getRecentFailurePatternLabel(): string | undefined {
+  const raw = localStorage.getItem('ltr_failureLog');
+  const logs = safeParseJSON<Array<{ rootCause?: string }>>(raw) || [];
+  if (!logs.length) return undefined;
+  const counts: Record<string, number> = {};
+  for (const log of logs.slice(0, 20)) {
+    const key = log.rootCause || 'other';
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const labels: Record<string, string> = {
+    time: '시간 압박',
+    motivation: '동기 저하',
+    difficulty: '난이도 과부하',
+    environment: '환경 제약',
+    other: '기타',
+  };
+  return labels[top || 'other'] || '기타';
+}
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -166,6 +187,14 @@ export default function App() {
     localStorage.setItem('ltr_questDate', new Date().toISOString().split('T')[0]);
     if (isSupabaseConfigured()) saveQuests(quests);
   }, []);
+
+  const getQuestGenerationContext = useCallback((): QuestGenerationContext => {
+    return {
+      energy,
+      voiceCheckIn: latestVoiceCheckIn?.text,
+      recentFailurePattern: getRecentFailurePatternLabel(),
+    };
+  }, [energy, latestVoiceCheckIn]);
 
   // ── Load state ──
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -260,7 +289,7 @@ export default function App() {
     if (!isGeminiConfigured()) return;
     setIsGeneratingQuests(true);
     try {
-      const aiQuests = await generatePersonalizedQuests(profile, techTree);
+      const aiQuests = await generatePersonalizedQuests(profile, techTree, getQuestGenerationContext());
       if (aiQuests && aiQuests.length > 0) {
         persistTodayQuests(adaptQuestsForContext(aiQuests));
       } else setDefaultQuests();
@@ -321,7 +350,7 @@ export default function App() {
       setAiMessage('AI가 맞춤 퀘스트를 생성하고 있어요...');
       try {
         const [aiQuests, aiTree, insight] = await Promise.all([
-          generatePersonalizedQuests(newProfile),
+          generatePersonalizedQuests(newProfile, undefined, getQuestGenerationContext()),
           generateTechTree(newProfile),
           getAIInsight(newProfile, 0),
         ]);
@@ -346,14 +375,14 @@ export default function App() {
     setIsGeneratingQuests(true);
     setAiMessage('새로운 퀘스트를 생성하고 있어요...');
     try {
-      const aiQuests = await generatePersonalizedQuests(userProfile, techTree);
+      const aiQuests = await generatePersonalizedQuests(userProfile, techTree, getQuestGenerationContext());
       if (aiQuests?.length) {
         persistTodayQuests(adaptQuestsForContext(aiQuests));
         setAiMessage('새로운 퀘스트가 준비되었어요! ✨');
       }
     } catch { setAiMessage('퀘스트 생성에 실패했어요.'); }
     finally { setIsGeneratingQuests(false); setTimeout(() => setAiMessage(null), 3000); }
-  }, [userProfile, techTree, adaptQuestsForContext, persistTodayQuests]);
+  }, [userProfile, techTree, adaptQuestsForContext, persistTodayQuests, getQuestGenerationContext]);
 
   // ── Quest toggle ──
   const handleQuestToggle = useCallback((questId: string) => {

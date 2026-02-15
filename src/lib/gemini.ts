@@ -34,6 +34,12 @@ export interface TechTreeResponse {
   estimatedCompletionDate: string;
 }
 
+export interface QuestGenerationContext {
+  energy?: number;
+  voiceCheckIn?: string;
+  recentFailurePattern?: string;
+}
+
 export async function generateTechTree(profile: UserProfile): Promise<TechTreeResponse | null> {
   if (!model) return null;
 
@@ -92,7 +98,8 @@ export async function generateTechTree(profile: UserProfile): Promise<TechTreeRe
 // ── Personalized Quests ──
 export async function generatePersonalizedQuests(
   profile: UserProfile,
-  techTree?: TechTreeResponse | null
+  techTree?: TechTreeResponse | null,
+  context?: QuestGenerationContext
 ): Promise<Quest[] | null> {
   if (!model) return null;
 
@@ -102,6 +109,12 @@ export async function generatePersonalizedQuests(
         status: p.status,
         currentQuest: p.children?.find(q => q.status === 'in_progress')?.title,
       })))}`
+    : '';
+  const contextHint = context
+    ? `\n추가 맥락:
+- 현재 에너지(1-5): ${context.energy ?? 'unknown'}
+- 최근 음성 체크인: ${context.voiceCheckIn || '없음'}
+- 최근 실패 패턴: ${context.recentFailurePattern || 'unknown'}`
     : '';
 
   const prompt = `당신은 개인 성장 코치 AI입니다. 사용자의 목표와 현재 진행 상황을 바탕으로 오늘 실행할 3개의 데일리 퀘스트를 생성하세요.
@@ -113,7 +126,7 @@ export async function generatePersonalizedQuests(
 - 선호 루틴: ${profile.routineTime === 'morning' ? '아침형' : '저녁형'}
 - 제약 조건: ${profile.constraints}
 - 현재 Day ${profile.currentDay}
-- 연속 달성: ${profile.streak}일${treeContext}
+- 연속 달성: ${profile.streak}일${treeContext}${contextHint}
 
 ## 응답 형식 (순수 JSON만)
 {
@@ -137,7 +150,9 @@ export async function generatePersonalizedQuests(
 4. 각 퀘스트는 오늘 완료 가능하고 구체적이어야 함
 5. alternative는 시간이 없을 때 5-10분으로 할 수 있는 축소 버전
 6. Day ${profile.currentDay}에 맞는 난이도 조절 (초반엔 쉽게, 점차 어렵게)
-7. 제약 조건 "${profile.constraints}" 반영`;
+7. 제약 조건 "${profile.constraints}" 반영
+8. 에너지가 낮거나(<=2) 음성 체크인에 피곤/무기력 신호가 있으면 첫 퀘스트를 5-10분 저강도로 제안
+9. 최근 실패 패턴이 있으면 같은 패턴을 피하는 대체안을 description에 명시`;
 
   try {
     const result = await model.generateContent(prompt);
