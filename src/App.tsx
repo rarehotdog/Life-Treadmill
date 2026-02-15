@@ -79,6 +79,15 @@ interface VoiceCheckInEntry {
   createdAt: string;
 }
 
+function safeParseJSON<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 function parseMinutes(duration: string): number | null {
   const m = duration.match(/(\d+)/);
   if (!m) return null;
@@ -169,8 +178,13 @@ export default function App() {
     const savedFutureSelfPrompt = localStorage.getItem('ltr_futureSelfPrompt');
     const savedVoiceCheckIn = localStorage.getItem('ltr_voiceCheckIn');
 
-    if (savedProfile) {
-      const profile = JSON.parse(savedProfile);
+    const parsedProfile = safeParseJSON<UserProfile>(savedProfile);
+    const parsedSavedQuests = safeParseJSON<Quest[]>(savedQuests);
+    const parsedSavedTree = safeParseJSON<TechTreeResponse>(savedTree);
+    const parsedSavedVoiceCheckIn = safeParseJSON<VoiceCheckInEntry>(savedVoiceCheckIn);
+
+    if (parsedProfile) {
+      const profile = parsedProfile;
       setUserProfile(profile);
       setIsCustomized(customized === 'true');
 
@@ -179,8 +193,8 @@ export default function App() {
 
       if (lastQuestDate !== todayStr && isGeminiConfigured()) {
         refreshDailyQuests(profile);
-      } else if (savedQuests) {
-        setTodayQuests(JSON.parse(savedQuests));
+      } else if (parsedSavedQuests) {
+        setTodayQuests(parsedSavedQuests);
       } else {
         setDefaultQuests();
       }
@@ -195,8 +209,8 @@ export default function App() {
       if (savedFutureSelfPrompt) {
         setFutureSelfPrompt(savedFutureSelfPrompt);
       }
-      if (savedVoiceCheckIn) {
-        try { setLatestVoiceCheckIn(JSON.parse(savedVoiceCheckIn)); } catch { /* ignore */ }
+      if (parsedSavedVoiceCheckIn) {
+        setLatestVoiceCheckIn(parsedSavedVoiceCheckIn);
       }
 
       if (isGeminiConfigured()) loadAIInsight(profile);
@@ -218,13 +232,13 @@ export default function App() {
       if (savedFutureSelfPrompt) {
         setFutureSelfPrompt(savedFutureSelfPrompt);
       }
-      if (savedVoiceCheckIn) {
-        try { setLatestVoiceCheckIn(JSON.parse(savedVoiceCheckIn)); } catch { /* ignore */ }
+      if (parsedSavedVoiceCheckIn) {
+        setLatestVoiceCheckIn(parsedSavedVoiceCheckIn);
       }
     }
 
-    if (savedTree) {
-      try { setTechTree(JSON.parse(savedTree)); } catch { /* ignore */ }
+    if (parsedSavedTree) {
+      setTechTree(parsedSavedTree);
     }
 
     setIsLoading(false);
@@ -235,7 +249,7 @@ export default function App() {
   const loadAIInsight = async (profile: UserProfile) => {
     try {
       const savedQuests = localStorage.getItem('ltr_quests');
-      const quests: Quest[] = savedQuests ? JSON.parse(savedQuests) : [];
+      const quests: Quest[] = safeParseJSON<Quest[]>(savedQuests) || [];
       const rate = quests.length > 0 ? (quests.filter(q => q.completed).length / quests.length) * 100 : 0;
       const insight = await getAIInsight(profile, rate);
       if (insight) setAiMessage(insight);
@@ -469,7 +483,7 @@ export default function App() {
         energy,
       };
       const raw = localStorage.getItem('ltr_failureLog');
-      const prev: FailureLogEntry[] = raw ? JSON.parse(raw) : [];
+      const prev: FailureLogEntry[] = safeParseJSON<FailureLogEntry[]>(raw) || [];
       const next = [logEntry, ...prev].slice(0, 100);
       localStorage.setItem('ltr_failureLog', JSON.stringify(next));
     }
