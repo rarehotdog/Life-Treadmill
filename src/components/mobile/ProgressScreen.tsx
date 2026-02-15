@@ -87,7 +87,7 @@ export default function ProgressScreen({
   const daysUntilBadge = nextBadge - profile.streak;
 
   return (
-    <div className="px-5 pt-4 pb-6 bg-[#F9FAFB] min-h-screen">
+    <div className="screen-wrap bg-[#F9FAFB] min-h-screen">
 
       {/* ── Header ── */}
       <div className="mb-4">

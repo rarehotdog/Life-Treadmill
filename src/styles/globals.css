@@ -4,6 +4,14 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+:root {
+  --screen-pad-x: clamp(16px, 4.6vw, 22px);
+  --screen-pad-top: 16px;
+  --screen-pad-bottom: 24px;
+  --tracking-heading-tight: -0.25px;
+  --tracking-heading-snug: -0.15px;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -48,27 +56,35 @@ button:active, a:active {
 
 /* Tracking */
 .tracking-tight-custom {
-  letter-spacing: -0.5px;
+  letter-spacing: var(--tracking-heading-tight);
 }
 .tracking-snug {
-  letter-spacing: -0.3px;
+  letter-spacing: var(--tracking-heading-snug);
 }
 
 /* Font sizes matching Figma */
-.text-28 { font-size: 28px; }
-.text-22 { font-size: 22px; }
-.text-36 { font-size: 36px; }
-.text-15 { font-size: 15px; }
-.text-14 { font-size: 14px; }
-.text-13 { font-size: 13px; }
-.text-12 { font-size: 12px; }
-.text-11 { font-size: 11px; }
+.text-28 { font-size: 28px; line-height: 1.22; }
+.text-22 { font-size: 22px; line-height: 1.3; }
+.text-36 { font-size: 36px; line-height: 1.15; letter-spacing: -0.4px; }
+.text-15 { font-size: 15px; line-height: 1.46; }
+.text-14 { font-size: 14px; line-height: 1.45; }
+.text-13 { font-size: 13px; line-height: 1.42; }
+.text-12 { font-size: 12px; line-height: 1.4; }
+.text-11 { font-size: 11px; line-height: 1.36; }
 
 /* Custom padding */
 .p-14 { padding: 14px; }
 
 /* Custom rounded */
 .rounded-14 { border-radius: 14px; }
+
+/* Screen rhythm for app / app-web */
+.screen-wrap {
+  padding-left: var(--screen-pad-x);
+  padding-right: var(--screen-pad-x);
+  padding-top: var(--screen-pad-top);
+  padding-bottom: var(--screen-pad-bottom);
+}
 
 /* Animations */
 @keyframes fadeIn {

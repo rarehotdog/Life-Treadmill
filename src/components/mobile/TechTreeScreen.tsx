@@ -169,7 +169,7 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
   };
 
   return (
-    <div className="px-5 pt-4 pb-6 bg-[#F9FAFB] min-h-screen">
+    <div className="screen-wrap bg-[#F9FAFB] min-h-screen">
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-4">
