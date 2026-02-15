@@ -516,6 +516,28 @@ export default function App() {
     return t;
   }
 
+  function rerouteTechTreeForRecovery(
+    tree: TechTreeResponse,
+    rootCause: FailureResolutionMeta['rootCause']
+  ): TechTreeResponse {
+    const t = JSON.parse(JSON.stringify(tree)) as TechTreeResponse;
+    const phase = t.root.children?.find((p) => p.status === 'in_progress' && p.children?.length);
+    if (!phase || !phase.children) return t;
+
+    const activeIdx = phase.children.findIndex((q) => q.status === 'in_progress');
+    const lockedIdx = phase.children.findIndex((q) => q.status === 'locked');
+    if (activeIdx < 0 || lockedIdx < 0) return t;
+
+    if (rootCause === 'difficulty' || rootCause === 'time' || rootCause === 'environment') {
+      phase.children[activeIdx].status = 'locked';
+      phase.children[lockedIdx].status = 'in_progress';
+    }
+
+    if (phase.children.every((q) => q.status === 'completed')) phase.status = 'completed';
+    else phase.status = 'in_progress';
+    return t;
+  }
+
   // ── Failure ──
   const handleQuestFail = useCallback((questId: string) => {
     const quest = todayQuests.find(q => q.id === questId);
@@ -549,8 +571,20 @@ export default function App() {
       if (isSupabaseConfigured()) saveQuests(updated);
       return updated;
     });
+
+    if (techTree) {
+      const routed = rerouteTechTreeForRecovery(techTree, meta.rootCause);
+      if (JSON.stringify(routed) !== JSON.stringify(techTree)) {
+        setTechTree(routed);
+        localStorage.setItem('ltr_techTree', JSON.stringify(routed));
+        if (isSupabaseConfigured()) saveTechTree(routed);
+        setAiMessage('복구 경로를 반영해 테크트리를 조정했어요 🔄');
+        setTimeout(() => setAiMessage(null), 2500);
+      }
+    }
+
     setFailureQuest(null);
-  }, [failureQuest, stats, addXP, energy]);
+  }, [failureQuest, stats, addXP, energy, techTree]);
 
   const handleTechTreeUpdate = useCallback((tree: TechTreeResponse) => {
     setTechTree(tree);
