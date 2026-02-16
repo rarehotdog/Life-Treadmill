@@ -80,7 +80,7 @@ function getTodayString(): string {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
+    globalThis.setTimeout(resolve, ms);
   });
 }
 
@@ -207,7 +207,7 @@ async function writeQuestsRaw(userId: string, quests: Quest[]): Promise<void> {
   if (deleteError) throw deleteError;
 
   const rows = quests.map((quest) => ({
-    id: `${userId}-${quest.id}-${todayStr}`,
+    id: `${userId}__${quest.id}__${todayStr}`,
     user_id: userId,
     title: quest.title,
     duration: quest.duration,
@@ -220,6 +220,24 @@ async function writeQuestsRaw(userId: string, quests: Quest[]): Promise<void> {
 
   const { error: upsertError } = await supabase.from('quests').upsert(rows);
   if (upsertError) throw upsertError;
+}
+
+function extractQuestId(compositeId: string, userId: string, todayStr: string): string {
+  // Current stable format: <userId>__<questId>__<YYYY-MM-DD>
+  const currentDelimiter = '__';
+  if (compositeId.includes(currentDelimiter)) {
+    const [idPrefix, questId] = compositeId.split(currentDelimiter);
+    if (idPrefix === userId && questId) return questId;
+  }
+
+  // Legacy format: <userId>-<questId>-<YYYY-MM-DD> (questId may include '-')
+  const legacyPrefix = `${userId}-`;
+  const legacySuffix = `-${todayStr}`;
+  if (compositeId.startsWith(legacyPrefix) && compositeId.endsWith(legacySuffix)) {
+    return compositeId.slice(legacyPrefix.length, compositeId.length - legacySuffix.length);
+  }
+
+  return compositeId;
 }
 
 async function writeTechTreeRaw(userId: string, tree: TechTreeResponse): Promise<void> {
@@ -296,10 +314,11 @@ export async function flushSyncOutbox(): Promise<void> {
   const userId = getUserId();
   const result = await drainOutbox((item) => replayOutboxItem(item, userId));
 
-  if (result.processed > 0 || result.remaining > 0) {
+  if (result.processed > 0 || result.remaining > 0 || result.dropped > 0) {
     trackEvent('sync.outbox_drain', {
       processed: result.processed,
       remaining: result.remaining,
+      dropped: result.dropped,
     });
   }
 }
@@ -395,7 +414,7 @@ export async function loadQuests(): Promise<Quest[] | null> {
   if (error || !data || data.length === 0) return null;
 
   return (data as DBQuest[]).map((row) => ({
-    id: row.id.split('-').pop() || row.id,
+    id: extractQuestId(row.id, userId, todayStr),
     title: row.title,
     duration: row.duration,
     completed: row.completed,

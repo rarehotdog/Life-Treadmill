@@ -30,6 +30,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 const CURRENT_STORAGE_SCHEMA_VERSION: StorageSchemaVersion = 2;
+const OUTBOX_MAX_ATTEMPTS = 15;
 
 function canUseStorage(): boolean {
   return typeof window !== 'undefined' && !!window.localStorage;
@@ -164,17 +165,19 @@ export function enqueueOutbox(
 
 export async function drainOutbox(
   executor: (item: SyncOutboxItem) => Promise<boolean>,
-): Promise<{ processed: number; remaining: number }> {
+): Promise<{ processed: number; remaining: number; dropped: number }> {
   const outbox = readOutbox();
   if (!outbox.length) {
     return {
       processed: 0,
       remaining: 0,
+      dropped: 0,
     };
   }
 
   const nextQueue: SyncOutboxItem[] = [];
   let processed = 0;
+  let dropped = 0;
 
   for (const item of outbox) {
     try {
@@ -183,13 +186,33 @@ export async function drainOutbox(
         processed += 1;
         continue;
       }
-    } catch {
-      // Continue to queue retry.
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const nextAttempts = item.attempts + 1;
+      if (nextAttempts >= OUTBOX_MAX_ATTEMPTS) {
+        dropped += 1;
+        continue;
+      }
+
+      nextQueue.push({
+        ...item,
+        attempts: nextAttempts,
+        lastError: errorMessage,
+        updatedAt: new Date().toISOString(),
+      });
+
+      continue;
+    }
+
+    const nextAttempts = item.attempts + 1;
+    if (nextAttempts >= OUTBOX_MAX_ATTEMPTS) {
+      dropped += 1;
+      continue;
     }
 
     nextQueue.push({
       ...item,
-      attempts: item.attempts + 1,
+      attempts: nextAttempts,
       updatedAt: new Date().toISOString(),
     });
   }
@@ -199,6 +222,7 @@ export async function drainOutbox(
   return {
     processed,
     remaining: nextQueue.length,
+    dropped,
   };
 }
 

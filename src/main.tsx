@@ -1,5 +1,6 @@
 import { Component, StrictMode, Suspense, lazy, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { trackError } from './lib/telemetry';
 import './styles/globals.css';
 
 const App = lazy(async () => import('./App'));
@@ -39,6 +40,18 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Failed to find the root element.');
 }
+
+window.addEventListener('error', (event) => {
+  trackError(event.error ?? event.message, {
+    phase: 'window.error',
+  });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  trackError(event.reason, {
+    phase: 'window.unhandledrejection',
+  });
+});
 
 createRoot(rootElement).render(
   <StrictMode>

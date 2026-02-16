@@ -54,17 +54,17 @@ function parseJSON<T>(text: string): T | null {
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timeoutId = window.setTimeout(() => {
+    const timeoutId = globalThis.setTimeout(() => {
       reject(new Error(`Gemini timeout after ${timeoutMs}ms`));
     }, timeoutMs);
 
     promise
       .then((value) => {
-        window.clearTimeout(timeoutId);
+        globalThis.clearTimeout(timeoutId);
         resolve(value);
       })
       .catch((error) => {
-        window.clearTimeout(timeoutId);
+        globalThis.clearTimeout(timeoutId);
         reject(error);
       });
   });
