@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Trophy, Lock, RefreshCw, CheckCircle2, Circle, Loader2, Zap } from 'lucide-react';
-import type { UserProfile } from '../../App';
+import type { UserProfile } from '../../types/app';
 import { generateTechTree, isGeminiConfigured, type TechTreeNode, type TechTreeResponse } from '../../lib/gemini';
+import { getItemJSON, setItemJSON, STORAGE_KEYS } from '../../lib/app-storage';
+import { Button, Card, CardContent, Progress } from '../ui';
 
 interface TechTreeScreenProps {
   profile: UserProfile;
@@ -83,14 +85,11 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
 
   // Load saved tree from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('ltr_techTree');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setTree(parsed);
-        setHasGenerated(true);
-      } catch { /* ignore */ }
-    }
+    const saved = getItemJSON<TechTreeResponse>(STORAGE_KEYS.techTree);
+    if (!saved) return;
+
+    setTree(saved);
+    setHasGenerated(true);
   }, []);
 
   useEffect(() => {
@@ -130,7 +129,7 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
       if (result) {
         setTree(result);
         setHasGenerated(true);
-        localStorage.setItem('ltr_techTree', JSON.stringify(result));
+        setItemJSON(STORAGE_KEYS.techTree, result);
         onTechTreeUpdate?.(result);
       }
     } catch (error) {
@@ -169,28 +168,31 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
   };
 
   return (
-    <div className="screen-wrap bg-[#F9FAFB] min-h-screen">
-
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h1 className="text-28 font-bold text-gray-900 tracking-tight-custom leading-tight">Journey</h1>
-          <p className="text-14 text-[#9CA3AF] mt-0.5">목표를 향한 여정</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b border-gray-100 screen-wrap-tight">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="heading-1 text-gray-900">Journey</h1>
+            <p className="body-14 mt-0.5 text-gray-500">목표를 향한 여정</p>
+          </div>
+          {isGeminiConfigured() && (
+            <Button
+              onClick={handleGenerateTree}
+              disabled={isLoading}
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-gray-100"
+            >
+              {isLoading ? (
+                <Loader2 className="w-[18px] h-[18px] text-[#7C3AED] animate-spin" />
+              ) : (
+                <RefreshCw className="w-[18px] h-[18px] text-gray-600" />
+              )}
+            </Button>
+          )}
         </div>
-        {isGeminiConfigured() && (
-          <button
-            onClick={handleGenerateTree}
-            disabled={isLoading}
-            className="w-11 h-11 tap-44 bg-white rounded-xl border border-[#E5E7EB] flex items-center justify-center"
-          >
-            {isLoading ? (
-              <Loader2 className="w-[18px] h-[18px] text-[#7C3AED] animate-spin" />
-            ) : (
-              <RefreshCw className="w-[18px] h-[18px] text-gray-600" />
-            )}
-          </button>
-        )}
       </div>
+      <div className="screen-wrap-tight">
 
       {/* ── AI Generate Banner ── */}
       {!hasGenerated && isGeminiConfigured() && (
@@ -218,38 +220,34 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.06 }}
-        className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-3xl p-5 mb-4 text-white relative overflow-hidden"
+        className="mb-4"
       >
-        <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
-        <div className="flex items-center gap-3 mb-3 relative z-10">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1">
-            <p className="text-12 text-white/60">최종 목표</p>
-            <p className="text-15 font-bold leading-snug">{tree.root.title}</p>
-          </div>
-        </div>
+        <Card className="relative overflow-hidden rounded-3xl border-0 bg-gradient-to-br from-violet-500 to-purple-600 text-white">
+          <CardContent className="p-5">
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
+            <div className="relative z-10 mb-3 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                <Trophy className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-12 text-white/60">최종 목표</p>
+                <p className="text-15 font-bold leading-snug">{tree.root.title}</p>
+              </div>
+            </div>
 
-        {/* Progress */}
-        <div className="relative z-10">
-          <div className="flex justify-between text-13 mb-1">
-            <span className="text-white/70">전체 진행률</span>
-            <span className="font-semibold">{progressPercent}%</span>
-          </div>
-          <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 0.6 }}
-              className="h-full bg-white rounded-full"
-            />
-          </div>
-          <div className="flex justify-between text-12 text-white/50 mt-1.5">
-            <span>{completed}/{total} 완료</span>
-            <span>예상: {tree.estimatedCompletionDate}</span>
-          </div>
-        </div>
+            <div className="relative z-10">
+              <div className="mb-1 flex justify-between text-13">
+                <span className="text-white/70">전체 진행률</span>
+                <span className="font-semibold">{progressPercent}%</span>
+              </div>
+              <Progress value={progressPercent} className="h-1.5 bg-white/20 [&>div]:bg-white" />
+              <div className="mt-1.5 flex justify-between text-12 text-white/50">
+                <span>{completed}/{total} 완료</span>
+                <span>예상: {tree.estimatedCompletionDate}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* ── Reroute Banner ── */}
@@ -258,40 +256,42 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
-          className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4"
+          className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3"
         >
-          <p className="text-13 text-amber-700 font-medium">경로가 업데이트되었습니다. 오늘의 최적 루트로 재배치했어요.</p>
+          <p className="text-13 font-medium text-amber-700">경로가 업데이트되었습니다. 오늘의 최적 루트로 재배치했어요.</p>
         </motion.div>
       )}
 
       {/* ── Loading State ── */}
       {isLoading && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-white rounded-2xl p-8 border border-[#F3F4F6] flex flex-col items-center mb-4"
-        >
-          <div className="w-10 h-10 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-15 font-semibold text-gray-900 mb-1">AI가 여정을 설계하고 있어요</p>
-          <p className="text-13 text-[#9CA3AF]">"{profile.goal}" 분석 중...</p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
+          <Card className="rounded-2xl border border-[#F3F4F6] bg-white">
+            <CardContent className="flex flex-col items-center p-8">
+              <div className="mb-3 h-10 w-10 animate-spin rounded-full border-2 border-[#7C3AED] border-t-transparent" />
+              <p className="mb-1 text-15 font-semibold text-gray-900">AI가 여정을 설계하고 있어요</p>
+              <p className="text-13 text-[#9CA3AF]">"{profile.goal}" 분석 중...</p>
+            </CardContent>
+          </Card>
         </motion.div>
       )}
 
       {/* ── Legend ── */}
-      <div className="flex items-center gap-4 mb-4 bg-white rounded-2xl p-3 border border-[#F3F4F6]">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-emerald-500" />
-          <span className="text-12 text-[#6B7280]">완료</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-amber-400" />
-          <span className="text-12 text-[#6B7280]">진행중</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-gray-300" />
-          <span className="text-12 text-[#6B7280]">잠김</span>
-        </div>
-      </div>
+      <Card className="mb-4 rounded-2xl border border-[#F3F4F6] bg-white">
+        <CardContent className="flex items-center gap-4 p-4">
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-full bg-emerald-500" />
+            <span className="text-12 text-[#6B7280]">완료</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-full bg-amber-400" />
+            <span className="text-12 text-[#6B7280]">진행중</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-full bg-gray-300" />
+            <span className="text-12 text-[#6B7280]">잠김</span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Phases ── */}
       {!isLoading && (
@@ -332,11 +332,11 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
                         )}
                       </div>
                       <div>
-                        <p className={`text-15 font-semibold ${
+                          <p className={`text-15 font-semibold leading-[1.32] ${
                           phase.status === 'locked' ? 'text-gray-400' : 'text-gray-900'
                         }`}>{phase.title}</p>
                         {phase.estimatedDays && (
-                          <p className="text-12 text-[#9CA3AF]">{phase.estimatedDays}일 예상</p>
+                          <p className="text-12 leading-[1.38] text-[#9CA3AF]">{phase.estimatedDays}일 예상</p>
                         )}
                       </div>
                     </div>
@@ -395,7 +395,7 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
                             <Lock className="w-2.5 h-2.5 text-gray-400" />
                           )}
                         </div>
-                        <span className={`text-14 ${
+                        <span className={`text-13 leading-[1.42] ${
                           quest.status === 'completed' ? 'text-emerald-700 line-through' :
                           quest.status === 'in_progress' ? 'text-gray-900 font-medium' : 'text-gray-400'
                         }`}>{quest.title}</span>
@@ -425,6 +425,7 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -428,7 +428,7 @@ export default function App() {
         return;
       }
 
-      let nextStats = addXP(calculateQuestXP(stats.currentStreak), {
+      const baseStats = addXP(calculateQuestXP(stats.currentStreak), {
         ...stats,
         totalQuestsCompleted: stats.totalQuestsCompleted + 1,
       });
@@ -437,11 +437,11 @@ export default function App() {
       const wasAllCompleted = previousQuests.every((quest) => quest.completed);
 
       if (allCompleted && !wasAllCompleted) {
-        nextStats = addXP(calculatePerfectDayXP(), {
-          ...nextStats,
-          perfectDays: nextStats.perfectDays + 1,
-          currentStreak: nextStats.currentStreak + 1,
-          longestStreak: Math.max(nextStats.longestStreak, nextStats.currentStreak + 1),
+        addXP(calculatePerfectDayXP(), {
+          ...baseStats,
+          perfectDays: baseStats.perfectDays + 1,
+          currentStreak: baseStats.currentStreak + 1,
+          longestStreak: Math.max(baseStats.longestStreak, baseStats.currentStreak + 1),
         });
 
         confetti({

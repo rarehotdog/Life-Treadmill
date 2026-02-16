@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { UserProfile, Quest } from '../App';
+import type { Quest, UserProfile } from '../types/app';
 
 // ── Init ──
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { UserProfile, Quest } from '../App';
+import type { Quest, UserProfile } from '../types/app';
 import type { TechTreeResponse } from './gemini';
 
 // ── Init ──

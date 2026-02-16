@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   failureLog: 'ltr_failureLog',
   questHistory: 'ltr_questHistory',
   userId: 'ltr_userId',
+  yearImageLegacy: 'ltr_year_image',
+  yearImage: (goalId: string) => `ltr_year_image_${goalId}`,
 } as const;
 
 function canUseStorage(): boolean {
@@ -53,4 +55,28 @@ export function getItemJSON<T>(key: string): T | null {
 
 export function setItemJSON<T>(key: string, value: T): void {
   setItemString(key, JSON.stringify(value));
+}
+
+export function removeItem(key: string): void {
+  if (!canUseStorage()) return;
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Ignore storage remove failures.
+  }
+}
+
+export function getYearImage(goalId: string): string | null {
+  const scopedKey = STORAGE_KEYS.yearImage(goalId);
+  const scoped = getItemString(scopedKey);
+  if (scoped) return scoped;
+
+  const legacy = getItemString(STORAGE_KEYS.yearImageLegacy);
+  if (!legacy) return null;
+
+  // One-time migration from legacy key to goal-scoped key.
+  setItemString(scopedKey, legacy);
+  removeItem(STORAGE_KEYS.yearImageLegacy);
+  return legacy;
 }
