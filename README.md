@@ -1,67 +1,85 @@
 # LIFE TREADMILLS (LTR)
 
-AI가 삶의 맥락을 읽고, 오늘 실행할 단 하나의 다음 행동을 설계하는 Life OS.
+AI가 사용자 맥락을 기반으로 오늘 실행할 "다음 한 걸음"을 제안하는 모바일 중심 Life OS입니다.
 
-## Core Idea
-- 문제: 의지 부족이 아니라 결정 피로(decision fatigue)
-- 해법: Context -> Think -> Action 루프에서 의사결정 비용 제거
-- 원칙: 실패는 리셋이 아니라 경로 수정 데이터
+## Core Loop
+1. Context: 에너지, 음성 체크인, 실패 로그, 완료 이력 수집
+2. Think: Gemini 기반 퀘스트/테크트리/인사이트 추론
+3. Action: 오늘의 퀘스트 실행, 실패 복구, 진행 경로 갱신
 
-## 3-Layer Architecture
-1. Context Layer
-- 텍스트, 음성, 이미지, 행동 로그 기반 상태 수집
-- 제약(시간/에너지/환경) + 패턴(실패/성공) 관리
+## 현재 구현 범위
+- 게스트 시작 + 온보딩 기반 커스터마이징
+- Today 퀘스트 생성/완료/실패 복구 루프
+- 음성 체크인 기반 다음 퀘스트 조정
+- Energy 체크인 + XP/레벨/스트릭 반영
+- TechTree 진행/리루트
+- Share/FutureSelf/LevelUp 모달
+- 경량 UI 컴포넌트 세트 (`src/components/ui`)
 
-2. Think Layer
-- Gemini 추론으로 오늘의 우선 경로 계산
-- Dynamic Tech-Tree 업데이트
+## 기술 스택
+- React 18 + TypeScript
+- Vite 6
+- Tailwind CSS v4
+- Motion
+- Gemini API (`@google/generative-ai`)
+- Supabase (`@supabase/supabase-js`)
 
-3. Action Layer
-- 위젯형 Today Dashboard
-- 메인 퀘스트 + 대체 퀘스트 + 실패 복구 루프
-
-## Current App Status
-- 온보딩/프로필 저장
-- 오늘의 퀘스트 생성/완료/실패 처리
-- 실패 복구 플로우
-- 테크트리 화면
-- XP/레벨/스트릭 게이미피케이션
-- Home의 `Pathfinder OS` 3-Layer 위젯 섹션
-
-## Project Structure
-```text
-/Users/taehyeonkim/Documents/New project
-├── src/
-│   ├── App.tsx
-│   ├── main.tsx
-│   ├── components/
-│   │   ├── OnboardingFlow.tsx
-│   │   ├── character/
-│   │   ├── gamification/
-│   │   └── mobile/
-│   ├── lib/
-│   └── styles/
-├── docs/
-│   ├── HACKATHON_ONE_PAGER.md
-│   ├── GEMINI_PROMPTS.md
-│   └── DEMO_SCRIPT_3MIN.md
-└── vite.config.ts
-```
-
-## Run
+## 로컬 실행
 ```bash
 npm install
 npm run dev
 ```
 
-## Build
+## 정적 검증
 ```bash
+npm run lint
 npm run build
 ```
 
-참고: 현재 환경에서는 PWA 서비스워커 단계에서 빌드 이슈가 발생할 수 있습니다(`vite-plugin-pwa`).
+## 환경 변수
+`.env` 파일에 아래 값을 설정하면 AI/백엔드 기능이 활성화됩니다.
 
-## Hackathon Docs
-- One Pager: `/Users/taehyeonkim/Documents/New project/docs/HACKATHON_ONE_PAGER.md`
-- Prompt Pack: `/Users/taehyeonkim/Documents/New project/docs/GEMINI_PROMPTS.md`
-- 3-min Demo Script: `/Users/taehyeonkim/Documents/New project/docs/DEMO_SCRIPT_3MIN.md`
+```bash
+VITE_GEMINI_API_KEY=...
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+```
+
+설정이 없으면 앱은 로컬 fallback 모드로 동작합니다.
+
+## 프로젝트 구조
+```text
+.
+├── src/
+│   ├── App.tsx
+│   ├── main.tsx
+│   ├── types/
+│   │   └── app.ts
+│   ├── lib/
+│   │   ├── app-domain.ts
+│   │   ├── app-storage.ts
+│   │   ├── gamification.ts
+│   │   ├── gemini.ts
+│   │   └── supabase.ts
+│   ├── components/
+│   │   ├── OnboardingFlow.tsx
+│   │   ├── gamification/
+│   │   ├── mobile/
+│   │   └── ui/
+│   └── styles/
+│       └── globals.css
+├── docs/
+│   ├── DEPLOYMENT_GUIDE.md
+│   ├── HACKATHON_ONE_PAGER.md
+│   ├── GEMINI_PROMPTS.md
+│   └── DEMO_SCRIPT_3MIN.md
+├── index.html
+├── package.json
+└── vite.config.ts
+```
+
+## 문서
+- 배포 가이드: [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md)
+- 해커톤 원페이저: [`docs/HACKATHON_ONE_PAGER.md`](docs/HACKATHON_ONE_PAGER.md)
+- Gemini 프롬프트 팩: [`docs/GEMINI_PROMPTS.md`](docs/GEMINI_PROMPTS.md)
+- 3분 데모 스크립트: [`docs/DEMO_SCRIPT_3MIN.md`](docs/DEMO_SCRIPT_3MIN.md)
