@@ -43,9 +43,9 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div data-testid="app-shell" className="app-shell">
       {app.currentScreen !== 'onboarding' ? (
-        <div className="top-system-bar flex items-center justify-between px-6 body-14">
+        <div data-testid="top-system-bar" className="top-system-bar flex items-center justify-between px-6 body-14">
           <span className="font-semibold text-gray-900">
             {clockLabel}
           </span>

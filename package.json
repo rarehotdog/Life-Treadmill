@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "qa:screenshots": "node scripts/qa/screenshot-checklist.mjs",
+    "qa:screenshots:dry": "node scripts/qa/screenshot-checklist.mjs --dry-run"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

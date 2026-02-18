@@ -95,6 +95,7 @@ export default function ShareCard({ isOpen, onClose, profile, streak, level, com
       {isOpen ? (
         <>
           <motion.div
+            data-testid="share-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -102,6 +103,7 @@ export default function ShareCard({ isOpen, onClose, profile, streak, level, com
             className="fixed inset-0 z-[60] bg-black/60"
           />
           <motion.div
+            data-testid="share-modal"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -115,7 +117,7 @@ export default function ShareCard({ isOpen, onClose, profile, streak, level, com
             <div className="modal-body">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="modal-title text-gray-900">공유하기</h2>
-                <Button onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
+                <Button data-testid="share-modal-close" onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
                   <X className="h-4 w-4 text-gray-500" />
                 </Button>
               </div>
@@ -149,11 +151,11 @@ export default function ShareCard({ isOpen, onClose, profile, streak, level, com
               </Card>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button onClick={handleDownload} variant="secondary" className="cta-secondary bg-gray-100 text-gray-900">
+                <Button data-testid="share-modal-download" onClick={handleDownload} variant="secondary" className="cta-secondary bg-gray-100 text-gray-900">
                   <Download className="mr-2 h-5 w-5" />
                   이미지 저장
                 </Button>
-                <Button onClick={handleShare} className="cta-secondary bg-[#7C3AED] text-white hover:bg-[#7C3AED]">
+                <Button data-testid="share-modal-share" onClick={handleShare} className="cta-secondary bg-[#7C3AED] text-white hover:bg-[#7C3AED]">
                   <Share2 className="mr-2 h-5 w-5" />
                   공유하기
                 </Button>

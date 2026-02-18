@@ -31,7 +31,7 @@ export default function ProfileScreen({ profile, onStartCustomization, isCustomi
   const footerLinks = ['Purchase History', 'Privacy Policy', 'Help Center', 'Log out', 'Delete account'];
 
   return (
-    <div className="min-h-screen bg-gray-100 pb-24">
+    <div data-testid="screen-profile" className="min-h-screen bg-gray-100 pb-24">
       <div className="screen-wrap-tight flex items-center justify-between border-b border-gray-200 bg-white">
         <h1 className="heading-1 text-gray-900">Profile</h1>
         <Button variant="link" className="h-auto p-0 font-semibold text-blue-500">Done</Button>

@@ -17,7 +17,10 @@ export default function BottomNavigation({ currentScreen, onNavigate }: BottomNa
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/95 backdrop-blur-md border-t border-gray-200 safe-bottom z-50">
+    <div
+      data-testid="bottom-navigation"
+      className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto bg-white/95 backdrop-blur-md border-t border-gray-200 safe-bottom z-50"
+    >
       <div className="flex items-center justify-around h-20 px-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -26,6 +29,7 @@ export default function BottomNavigation({ currentScreen, onNavigate }: BottomNa
           return (
             <Button
               key={tab.id}
+              data-testid={`nav-${tab.id}`}
               onClick={() => onNavigate(tab.id)}
               variant="ghost"
               className="h-full flex-1 flex-col items-center justify-center gap-1 rounded-none"

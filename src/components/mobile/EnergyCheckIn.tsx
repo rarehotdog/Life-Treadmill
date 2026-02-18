@@ -39,6 +39,7 @@ export default function EnergyCheckIn({ isOpen, onClose, onSubmit }: EnergyCheck
       {isOpen ? (
         <>
           <motion.div
+            data-testid="energy-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -46,6 +47,7 @@ export default function EnergyCheckIn({ isOpen, onClose, onSubmit }: EnergyCheck
             className="fixed inset-0 z-[60] bg-black/40"
           />
           <motion.div
+            data-testid="energy-modal"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -62,7 +64,7 @@ export default function EnergyCheckIn({ isOpen, onClose, onSubmit }: EnergyCheck
                   <Zap className="h-5 w-5 text-amber-500" />
                   <h2 className="modal-title text-gray-900">오늘 컨디션은?</h2>
                 </div>
-                <Button onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
+                <Button data-testid="energy-modal-close" onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
                   <X className="h-4 w-4 text-gray-500" />
                 </Button>
               </div>
@@ -112,6 +114,7 @@ export default function EnergyCheckIn({ isOpen, onClose, onSubmit }: EnergyCheck
               </div>
 
               <Button
+                data-testid="energy-modal-submit"
                 onClick={handleSubmit}
                 disabled={!mood}
                 className={`w-full cta-primary ${mood ? 'bg-[#7C3AED] text-white' : 'cursor-not-allowed bg-gray-100 text-gray-400'}`}

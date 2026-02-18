@@ -135,6 +135,7 @@ export default function FailureSheet({ isOpen, onClose, quest, profile, energy, 
       {isOpen ? (
         <>
           <motion.div
+            data-testid="failure-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -143,6 +144,7 @@ export default function FailureSheet({ isOpen, onClose, quest, profile, energy, 
           />
 
           <motion.div
+            data-testid="failure-modal"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -156,7 +158,7 @@ export default function FailureSheet({ isOpen, onClose, quest, profile, energy, 
             <div className="modal-body">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="modal-title text-gray-900">{step === 'reason' ? '무슨 일이 있었나요?' : '괜찮아요 💛'}</h2>
-                <Button onClick={handleClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
+                <Button data-testid="failure-modal-close" onClick={handleClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
                   <X className="h-4 w-4 text-gray-500" />
                 </Button>
               </div>
@@ -240,10 +242,10 @@ export default function FailureSheet({ isOpen, onClose, quest, profile, energy, 
                   </Card>
 
                   <div className="space-y-2">
-                    <Button onClick={handleAccept} className="cta-primary w-full bg-[#7C3AED] text-white hover:bg-[#7C3AED]">
+                    <Button data-testid="failure-modal-accept" onClick={handleAccept} className="cta-primary w-full bg-[#7C3AED] text-white hover:bg-[#7C3AED]">
                       대안 퀘스트 수락하기
                     </Button>
-                    <Button onClick={handleClose} variant="secondary" className="cta-secondary w-full bg-gray-100 text-gray-600">
+                    <Button data-testid="failure-modal-skip" onClick={handleClose} variant="secondary" className="cta-secondary w-full bg-gray-100 text-gray-600">
                       괜찮아요, 넘어갈게요
                     </Button>
                   </div>

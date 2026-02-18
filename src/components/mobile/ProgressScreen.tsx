@@ -65,7 +65,7 @@ export default function ProgressScreen({ profile, completionRate, completedCount
   }, [goalImageKey]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div data-testid="screen-progress" className="min-h-screen bg-gray-50 pb-24">
       <div className="border-b border-gray-100 bg-white screen-wrap-tight">
         <div className="flex items-center justify-between">
           <h1 className="heading-1 text-gray-900">Progress</h1>

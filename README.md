@@ -40,6 +40,33 @@ npx tsc --noEmit
 - Error: 0
 - Warning: `react-refresh/only-export-components` 경고 6건(의도적으로 유지)
 
+## 실제 기기 기준 스크린샷 QA 자동화
+모바일 QA를 375/390/430 기준으로 자동 캡처하고 체크리스트 리포트를 생성합니다.
+
+1. Playwright 설치
+```bash
+npm install -D playwright
+```
+
+2. 앱 실행 중 QA 실행
+```bash
+npm run qa:screenshots
+```
+
+3. 출력
+- 스크린샷: `artifacts/qa-screenshots/<timestamp>/`
+- 리포트(JSON): `artifacts/qa-screenshots/<timestamp>/report.json`
+- 리포트(Markdown): `artifacts/qa-screenshots/<timestamp>/report.md`
+
+옵션:
+```bash
+# 실행 템플릿만 생성
+npm run qa:screenshots:dry
+
+# 외부 URL 대상 QA
+node scripts/qa/screenshot-checklist.mjs --base-url https://your-staging-url
+```
+
 ## 환경 변수
 ```bash
 # AI / DB
@@ -125,6 +152,7 @@ timeout + circuit-breaker + 응답 schema validation
 - SLO: [docs/SLO.md](docs/SLO.md)
 - 운영 런북: [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
 - 인시던트 대응: [docs/INCIDENT_PLAYBOOK.md](docs/INCIDENT_PLAYBOOK.md)
+- 스크린샷 QA 체크리스트: [docs/SCREENSHOT_QA_CHECKLIST.md](docs/SCREENSHOT_QA_CHECKLIST.md)
 - 해커톤 원페이저: [docs/HACKATHON_ONE_PAGER.md](docs/HACKATHON_ONE_PAGER.md)
 - Gemini 프롬프트: [docs/GEMINI_PROMPTS.md](docs/GEMINI_PROMPTS.md)
 - 3분 데모 스크립트: [docs/DEMO_SCRIPT_3MIN.md](docs/DEMO_SCRIPT_3MIN.md)

@@ -83,6 +83,7 @@ export default function VoiceCheckIn({ isOpen, onClose, onSave, initialText }: V
       {isOpen ? (
         <>
           <motion.div
+            data-testid="voice-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -91,6 +92,7 @@ export default function VoiceCheckIn({ isOpen, onClose, onSave, initialText }: V
           />
 
           <motion.div
+            data-testid="voice-modal"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -104,7 +106,7 @@ export default function VoiceCheckIn({ isOpen, onClose, onSave, initialText }: V
             <div className="modal-body">
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="modal-title text-gray-900">Voice Check-in</h2>
-                <Button onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
+                <Button data-testid="voice-modal-close" onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
                   <X className="h-4 w-4 text-gray-500" />
                 </Button>
               </div>
@@ -113,12 +115,12 @@ export default function VoiceCheckIn({ isOpen, onClose, onSave, initialText }: V
 
               <div className="mb-4 flex gap-2">
                 {!isRecording ? (
-                  <Button onClick={startRecording} className="flex-1 bg-[#111827] text-white">
+                  <Button data-testid="voice-modal-start" onClick={startRecording} className="flex-1 bg-[#111827] text-white">
                     <Mic className="mr-2 h-4 w-4" />
                     녹음 시작
                   </Button>
                 ) : (
-                  <Button onClick={stopRecording} className="flex-1 bg-red-500 text-white hover:bg-red-500">
+                  <Button data-testid="voice-modal-stop" onClick={stopRecording} className="flex-1 bg-red-500 text-white hover:bg-red-500">
                     <Square className="mr-2 h-4 w-4" />
                     녹음 중지
                   </Button>
@@ -138,7 +140,7 @@ export default function VoiceCheckIn({ isOpen, onClose, onSave, initialText }: V
                 className="input-surface body-14 h-28 resize-none p-4"
               />
 
-              <Button onClick={handleSave} disabled={!text.trim()} className="cta-primary mt-4 w-full bg-[#7C3AED] text-white disabled:opacity-40 hover:bg-[#7C3AED]">
+              <Button data-testid="voice-modal-save" onClick={handleSave} disabled={!text.trim()} className="cta-primary mt-4 w-full bg-[#7C3AED] text-white disabled:opacity-40 hover:bg-[#7C3AED]">
                 체크인 저장
               </Button>
             </div>

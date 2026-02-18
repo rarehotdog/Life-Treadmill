@@ -46,6 +46,7 @@ export default function FutureSelfVisualizer({
       {isOpen ? (
         <>
           <motion.div
+            data-testid="future-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -54,6 +55,7 @@ export default function FutureSelfVisualizer({
           />
 
           <motion.div
+            data-testid="future-modal"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -70,7 +72,7 @@ export default function FutureSelfVisualizer({
                   <Sparkles className="h-5 w-5 text-fuchsia-500" />
                   <h2 className="modal-title text-gray-900">Future Self</h2>
                 </div>
-                <Button onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
+                <Button data-testid="future-modal-close" onClick={onClose} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
                   <X className="h-4 w-4 text-gray-500" />
                 </Button>
               </div>
@@ -96,6 +98,7 @@ export default function FutureSelfVisualizer({
               </Card>
 
               <Button
+                data-testid="future-modal-save"
                 onClick={handleSave}
                 disabled={!prompt.trim()}
                 className="cta-primary w-full bg-[#111827] text-white disabled:opacity-40 hover:bg-[#111827]"

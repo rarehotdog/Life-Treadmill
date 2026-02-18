@@ -168,7 +168,7 @@ export default function TechTreeScreen({ profile, techTree: initialTechTree, onT
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div data-testid="screen-techtree" className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-100 screen-wrap-tight">
         <div className="flex items-start justify-between">
           <div>

@@ -87,7 +87,7 @@ export default function HomeScreen({
     today.getHours() < 12 ? 'morning' : today.getHours() < 18 ? 'afternoon' : 'evening';
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div data-testid="screen-home" className="min-h-screen bg-gray-50 pb-24">
       <div className="border-b border-gray-100 bg-white">
         <div className="screen-wrap-tight pb-3">
           <div className="mb-3 flex items-center justify-between">
@@ -97,16 +97,29 @@ export default function HomeScreen({
             </div>
             <div className="flex items-center gap-2">
               {onOpenVoiceCheckIn ? (
-                <Button onClick={onOpenVoiceCheckIn} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
+                <Button
+                  data-testid="open-voice-checkin"
+                  onClick={onOpenVoiceCheckIn}
+                  variant="secondary"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-gray-100"
+                >
                   <Mic size={18} className="text-gray-600" />
                 </Button>
               ) : null}
               {onOpenShare ? (
-                <Button onClick={onOpenShare} variant="secondary" size="icon" className="h-10 w-10 rounded-full bg-gray-100">
+                <Button
+                  data-testid="open-share-card"
+                  onClick={onOpenShare}
+                  variant="secondary"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-gray-100"
+                >
                   <Share2 size={18} className="text-gray-600" />
                 </Button>
               ) : null}
               <Button
+                data-testid="open-future-self"
                 onClick={onOpenFutureSelf}
                 variant="secondary"
                 size="icon"
@@ -131,6 +144,7 @@ export default function HomeScreen({
               </CardContent>
             </Card>
             <Button
+              data-testid="open-energy-checkin"
               onClick={onOpenEnergy}
               variant="ghost"
               className="h-auto rounded-xl border-0 bg-gradient-to-br from-purple-50 to-purple-100 px-3 py-2 text-left hover:bg-gradient-to-br"
@@ -189,6 +203,7 @@ export default function HomeScreen({
               {quests.map((quest) => (
                 <motion.button
                   key={quest.id}
+                  data-testid={`quest-item-${quest.id}`}
                   onClick={() => onQuestToggle(quest.id)}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full rounded-2xl border p-4 text-left transition-all ${
@@ -210,6 +225,7 @@ export default function HomeScreen({
                   </div>
                     {!quest.completed && onQuestFail ? (
                       <Button
+                        data-testid={`quest-fail-${quest.id}`}
                         onClick={(event) => {
                           event.stopPropagation();
                           onQuestFail(quest.id);
