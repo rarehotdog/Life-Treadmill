@@ -1,0 +1,47 @@
+name: Mobile QA Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Screenshot QA dry-run
+        run: npm run qa:screenshots:dry
+
+      - name: Goldenset QA
+        run: npm run qa:goldenset
+
+      - name: Upload screenshot dry-run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-screenshots-dry-run
+          path: artifacts/qa-screenshots/**/report.json
+          if-no-files-found: warn

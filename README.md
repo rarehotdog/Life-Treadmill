@@ -27,6 +27,9 @@ LTR는 단순 챗봇이 아니라, 개인의 결정을 돕는 **Decision Termina
 - 스토리지 신뢰성: schema migration + outbox + legacy key migration
 - AI/DB 가드레일: timeout/retry/circuit-breaker/validation
 - 모바일 타이포/간격: 토큰 클래스(`heading-*`, `body-*`, `screen-wrap-*`, `card-padding`, `modal-*`, `cta-*`) 통일
+- Progress 고도화:
+  - Decision Log(최근 14일) 목록 + 상세 바텀시트 회고 UI
+  - Sync Reliability(online/offline, pending outbox, last drain, manual retry)
 - 관측성 기반: `src/lib/telemetry.ts` + feature flag 기반 점진 적용
 - 전략 고정: 최소수집·로컬우선 + Decision Quality 운영 + 골든셋 회귀
 
@@ -67,6 +70,7 @@ npm run qa:screenshots
 - 스크린샷: `artifacts/qa-screenshots/<timestamp>/`
 - 리포트(JSON): `artifacts/qa-screenshots/<timestamp>/report.json`
 - 리포트(Markdown): `artifacts/qa-screenshots/<timestamp>/report.md`
+- 게이트 정책: `gatePolicy=error_only` (`failedChecks`만 차단, `warningChecks`는 보고용)
 
 옵션:
 ```bash
@@ -92,6 +96,8 @@ npm run qa:goldenset:add -- --category B_decision_quality --prompt "실제 결�
 ```bash
 # AI / DB
 VITE_GEMINI_API_KEY=
+VITE_OPENAI_API_KEY=
+VITE_OPENAI_MODEL=gpt-4o-mini
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 
@@ -100,14 +106,17 @@ VITE_FLAG_RELIABLE_STORAGE_V2_ROLLOUT=100
 VITE_FLAG_AI_GUARDRAILS_V2_ROLLOUT=100
 VITE_FLAG_TELEMETRY_V1_ROLLOUT=100
 VITE_FLAG_DECISION_TERMINAL_V1_ROLLOUT=100
+VITE_FLAG_DECISION_LOG_UI_V1_ROLLOUT=100
+VITE_FLAG_SYNC_STATUS_UI_V1_ROLLOUT=100
 VITE_FLAG_GOVERNANCE_AUDIT_V1_ROLLOUT=100
 VITE_FLAG_GOLDENSET_V1_ROLLOUT=100
 
 # Optional
 VITE_GEMINI_TIMEOUT_MS=12000
+VITE_AI_TIMEOUT_MS=12000
 ```
 
-Gemini/Supabase 미설정 시, 앱은 로컬 fallback 경로로 동작합니다.
+Gemini/OpenAI/Supabase 미설정 시, 앱은 로컬 fallback 경로로 동작합니다.
 
 ## 프로젝트 구조
 ```text
@@ -179,8 +188,8 @@ timeout + circuit-breaker + 응답 schema validation
 
 ## 문서
 - 배포: [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
-- SLO: [docs/SLO.md](docs/SLO.md)
 - 운영 런북: [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+- SLO: [docs/SLO.md](docs/SLO.md)
 - 인시던트 대응: [docs/INCIDENT_PLAYBOOK.md](docs/INCIDENT_PLAYBOOK.md)
 - 스크린샷 QA 체크리스트: [docs/SCREENSHOT_QA_CHECKLIST.md](docs/SCREENSHOT_QA_CHECKLIST.md)
 - 골든셋 하니스: [docs/GOLDENSET_HARNESS.md](docs/GOLDENSET_HARNESS.md)

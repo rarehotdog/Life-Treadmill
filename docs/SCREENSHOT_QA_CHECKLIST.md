@@ -24,11 +24,23 @@ npm run qa:screenshots
 - Viewport: `375 / 390 / 430`
 - Screen: `Home`, `Journey`, `Progress`, `Profile`
 - Modal: `Energy`, `Voice`, `Future`, `Share`, `Failure`
+- Progress 확장:
+  - `Decision Log` 카드 존재
+  - Decision item 탭 시 `DecisionLogDetailSheet` 렌더/닫힘
+  - `Sync Reliability` 카드 + `지금 동기화` 버튼 존재
 - Layout guard:
   - 상단 시스템 바 렌더
   - 하단 네비게이션 렌더
   - 수평 오버플로우 없음
   - 핵심 CTA 터치 영역 `44x44` 이상
+- Typography guard:
+  - 메인 화면 컨테이너 내 금지 raw class 탐지: `text-xs|text-sm|text-lg|text-2xl|text-3xl`
+  - 모달 5종의 `.modal-title`, `.modal-subtle`, `.cta-*` 존재 체크
+  - `Pretendard` 폰트 패밀리 감지 (warning)
+- Gate policy:
+  - `gatePolicy=error_only`
+  - `failedChecks > 0` 이면 배포 차단
+  - `warningChecks`는 차단하지 않고 backlog 이슈로 추적
 
 ## 2) 실제 기기 수동 QA
 
@@ -38,6 +50,8 @@ npm run qa:screenshots
 - `heading-1 / heading-2 / heading-3` 계층이 화면 간 동일한지
 - `body-15 / body-14 / body-13 / caption-*`가 의도대로 유지되는지
 - 인라인 임시 자간 스타일이 다시 유입되지 않았는지
+- `display-36 / stat-18 / label-12`가 숫자/메타 텍스트에 일관되게 쓰였는지
+- 허용 예외: 장식용 이모지(`text-2xl`, `text-3xl`)는 타이포 규칙 위반으로 간주하지 않음
 
 ### 레이아웃 리듬
 - `screen-wrap-*` 패딩 리듬이 화면 간 일관적인지

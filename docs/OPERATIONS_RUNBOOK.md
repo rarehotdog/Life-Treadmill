@@ -7,19 +7,31 @@
 4. `npm run qa:screenshots:dry`
 5. `npm run qa:goldenset`
 6. 핵심 플로우 수동 검증
+7. `qa:screenshots` report에서 `failedChecks=0` 확인
+8. warning은 릴리즈 차단 없이 backlog 이슈로 등록
 
 ## 2) 점진 롤아웃 절차
-1. `VITE_FLAG_*_ROLLOUT=10` 배포
-2. 30분 모니터링 (error/outbox/AI 실패율/DQI)
-3. 이상 없으면 50 -> 100 순차 상승
-4. 이상 시 즉시 0으로 rollback
+1. 1차 배포(10%):
+   - `VITE_FLAG_DECISION_LOG_UI_V1_ROLLOUT=10`
+   - `VITE_FLAG_SYNC_STATUS_UI_V1_ROLLOUT=10`
+2. 최소 24시간 관측:
+   - `sync.manual_retry_succeeded/failed`
+   - `sync.outbox_drain remaining`
+   - Decision detail open 이벤트 추이
+3. 2차 배포(50%): 동일 변수 50으로 상향
+4. 최소 24시간 관측 후 3차 배포(100%)
+5. 이상 시 즉시 0으로 rollback:
+   - `VITE_FLAG_DECISION_LOG_UI_V1_ROLLOUT=0`
+   - `VITE_FLAG_SYNC_STATUS_UI_V1_ROLLOUT=0`
 
 ## 3) 런타임 점검 포인트
 - `sync.outbox_enqueued` 급증 여부
 - `sync.outbox_drain` 처리량/잔량
+- `sync.manual_retry_clicked/succeeded/failed` 비율
 - `ai.generate_quests_failed` 비율
 - `app.error` 증가 추이
 - `decision.quality_scored` 누락 여부
+- `ui.decision_log_item_opened` 추이(회고 기능 사용률)
 - `execution.applied|delayed|skipped` 비율 이상치
 - `governance.risk_flagged` 및 high-risk 무승인 시도
 

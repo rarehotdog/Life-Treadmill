@@ -122,24 +122,30 @@ async function writeJson(filePath, payload) {
 }
 
 function renderMarkdownReport(report) {
+  const getErrorFailures = (checks) => checks.filter((item) => !item.pass && item.severity !== 'warning');
+  const getWarnings = (checks) => checks.filter((item) => !item.pass && item.severity === 'warning');
   const lines = [];
   lines.push('# LTR Screenshot QA Report');
   lines.push('');
   lines.push(`- Generated At: ${report.generatedAt}`);
   lines.push(`- Base URL: ${report.baseUrl}`);
   lines.push(`- Result: ${report.summary.passed ? 'PASS' : 'FAIL'}`);
+  lines.push(`- Gate Policy: ${report.summary.gatePolicy}`);
   lines.push(`- Total Checks: ${report.summary.totalChecks}`);
   lines.push(`- Passed Checks: ${report.summary.passedChecks}`);
   lines.push(`- Failed Checks: ${report.summary.failedChecks}`);
+  lines.push(`- Warning Checks: ${report.summary.warningChecks}`);
   lines.push('');
   lines.push('## Viewport Summary');
   lines.push('');
-  lines.push('| Width | Height | Checks | Passed | Failed | Screenshots |');
-  lines.push('| --- | --- | --- | --- | --- | --- |');
+  lines.push('| Width | Height | Checks | Passed | Failed | Warnings | Screenshots |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
 
   for (const viewport of report.viewports) {
+    const errors = getErrorFailures(viewport.checks);
+    const warnings = getWarnings(viewport.checks);
     lines.push(
-      `| ${viewport.width} | ${viewport.height} | ${viewport.checks.length} | ${viewport.checks.filter((item) => item.pass).length} | ${viewport.checks.filter((item) => !item.pass).length} | ${viewport.screenshots.length} |`,
+      `| ${viewport.width} | ${viewport.height} | ${viewport.checks.length} | ${viewport.checks.filter((item) => item.pass).length} | ${errors.length} | ${warnings.length} | ${viewport.screenshots.length} |`,
     );
   }
 
@@ -151,12 +157,26 @@ function renderMarkdownReport(report) {
     lines.push(`### ${viewport.width} x ${viewport.height}`);
     lines.push('');
     for (const check of viewport.checks) {
-      lines.push(`- ${check.pass ? '[x]' : '[ ]'} ${check.name}${check.detail ? ` - ${check.detail}` : ''}`);
+      const marker = check.pass ? '[x]' : check.severity === 'warning' ? '[!]' : '[ ]';
+      lines.push(`- ${marker} ${check.name}${check.detail ? ` - ${check.detail}` : ''}`);
     }
     lines.push('');
     lines.push('Screenshots:');
     for (const shot of viewport.screenshots) {
       lines.push(`- ${shot}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('## Typography Drift');
+  lines.push('');
+  for (const viewport of report.viewports) {
+    const driftChecks = viewport.checks.filter((check) => check.name.includes('typography drift'));
+    if (driftChecks.length === 0) continue;
+    lines.push(`### ${viewport.width} x ${viewport.height}`);
+    for (const check of driftChecks) {
+      const marker = check.pass ? '[x]' : '[ ]';
+      lines.push(`- ${marker} ${check.name}${check.detail ? ` - ${check.detail}` : ''}`);
     }
     lines.push('');
   }
@@ -174,6 +194,8 @@ function renderMarkdownReport(report) {
   lines.push('');
   lines.push('- [ ] Home/TechTree/Progress/Profile visible in each viewport');
   lines.push('- [ ] Energy/Voice/Future/Share/Failure modal open and close');
+  lines.push('- [ ] Progress Decision Log card visible and detail sheet opens');
+  lines.push('- [ ] Progress Sync Reliability card and retry CTA visible');
   lines.push('- [ ] Top system bar and bottom navigation visible');
   lines.push('- [ ] No horizontal overflow');
   lines.push('- [ ] Primary touch targets are >= 44x44');
@@ -207,8 +229,8 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
   const screenshots = [];
   let sequence = 1;
 
-  const pushCheck = (name, pass, detail = '') => {
-    checks.push({ name, pass, detail });
+  const pushCheck = (name, pass, detail = '', severity = 'error') => {
+    checks.push({ name, pass, detail, severity });
   };
 
   try {
@@ -234,6 +256,58 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
       ),
     );
     pushCheck('home heading token usage', homeHeadingTokenCheck);
+
+    const homeTypographyDrift = await page.evaluate(() => {
+      const banned = new Set(['text-xs', 'text-sm', 'text-lg', 'text-2xl', 'text-3xl']);
+      const root = document.querySelector('[data-testid="screen-home"]');
+      if (!root) {
+        return { pass: false, detail: 'screen-home container missing' };
+      }
+
+      const violations = [];
+      const exceptions = [];
+      const nodes = root.querySelectorAll('[class]');
+      for (const node of nodes) {
+        const classes = (node.className || '').split(/\s+/).filter(Boolean);
+        const text = (node.textContent || '').trim();
+        const hasLabelChars = /[A-Za-z0-9가-힣]/.test(text.replace(/\s+/g, ''));
+
+        for (const className of classes) {
+          if (!banned.has(className)) continue;
+
+          // Decorative emoji text can keep raw size classes.
+          if ((className === 'text-2xl' || className === 'text-3xl') && text && !hasLabelChars) {
+            exceptions.push(`${className}:${text.slice(0, 6)}`);
+            continue;
+          }
+          violations.push(className);
+        }
+      }
+
+      const uniqueViolations = Array.from(new Set(violations));
+      return {
+        pass: uniqueViolations.length === 0,
+        detail: uniqueViolations.length === 0
+          ? exceptions.length > 0
+            ? `decorative exceptions=${exceptions.length}`
+            : ''
+          : `raw classes=${uniqueViolations.join(', ')}`,
+      };
+    });
+    pushCheck('screen-home typography drift', homeTypographyDrift.pass, homeTypographyDrift.detail);
+
+    const fontCheck = await page.evaluate(() => {
+      const target = document.querySelector('[data-testid="app-shell"]') || document.body;
+      const family = getComputedStyle(target).fontFamily || '';
+      const pass = family.toLowerCase().includes('pretendard');
+      return { pass, family };
+    });
+    pushCheck(
+      'pretendard font family detected',
+      fontCheck.pass,
+      fontCheck.pass ? fontCheck.family : `resolved=${fontCheck.family}`,
+      'warning',
+    );
 
     const touchSelectors = [
       '[data-testid="open-energy-checkin"]',
@@ -305,6 +379,23 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
         await captureScreenshot(page, outputRoot, width, sequence, flow.label, screenshots);
         sequence += 1;
         pushCheck(`${flow.name} open`, true);
+
+        const modalHierarchy = await page.evaluate((selector) => {
+          const modal = document.querySelector(selector);
+          if (!modal) return { pass: false, detail: 'modal root missing' };
+          const hasTitle = !!modal.querySelector('.modal-title');
+          const hasSubtle = !!modal.querySelector('.modal-subtle');
+          const hasCta = !!modal.querySelector('.cta-primary, .cta-secondary');
+          const missing = [];
+          if (!hasTitle) missing.push('modal-title');
+          if (!hasSubtle) missing.push('modal-subtle');
+          if (!hasCta) missing.push('cta-*');
+          return {
+            pass: missing.length === 0,
+            detail: missing.length === 0 ? '' : `missing ${missing.join(', ')}`,
+          };
+        }, flow.modal);
+        pushCheck(`${flow.name} hierarchy tokens`, modalHierarchy.pass, modalHierarchy.detail);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         pushCheck(`${flow.name} open`, false, message);
@@ -378,6 +469,125 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
         ),
       );
       pushCheck(`${flow.label} heading token usage`, headingTokenCheck);
+
+      const typographyDrift = await page.evaluate((selector) => {
+        const banned = new Set(['text-xs', 'text-sm', 'text-lg', 'text-2xl', 'text-3xl']);
+        const root = document.querySelector(selector);
+        if (!root) return { pass: false, detail: `missing ${selector}` };
+
+        const violations = [];
+        const exceptions = [];
+        const nodes = root.querySelectorAll('[class]');
+        for (const node of nodes) {
+          const classes = (node.className || '').split(/\s+/).filter(Boolean);
+          const text = (node.textContent || '').trim();
+          const hasLabelChars = /[A-Za-z0-9가-힣]/.test(text.replace(/\s+/g, ''));
+          for (const className of classes) {
+            if (!banned.has(className)) continue;
+            if ((className === 'text-2xl' || className === 'text-3xl') && text && !hasLabelChars) {
+              exceptions.push(`${className}:${text.slice(0, 6)}`);
+              continue;
+            }
+            violations.push(className);
+          }
+        }
+
+        const uniqueViolations = Array.from(new Set(violations));
+        return {
+          pass: uniqueViolations.length === 0,
+          detail: uniqueViolations.length === 0
+            ? exceptions.length > 0
+              ? `decorative exceptions=${exceptions.length}`
+              : ''
+            : `raw classes=${uniqueViolations.join(', ')}`,
+        };
+      }, flow.screen);
+      pushCheck(`${flow.label} typography drift`, typographyDrift.pass, typographyDrift.detail);
+
+      if (flow.label === 'screen-progress') {
+        const decisionLogSectionCount = await page
+          .locator('[data-testid="decision-log-section"]')
+          .count();
+        pushCheck(
+          'decision log section visible',
+          decisionLogSectionCount > 0,
+          decisionLogSectionCount > 0 ? '' : 'section missing',
+        );
+
+        if (decisionLogSectionCount > 0) {
+          const decisionLogItem = page.locator('[data-testid="decision-log-item"]').first();
+          const decisionLogItemCount = await decisionLogItem.count();
+          const decisionLogEmptyCount = await page
+            .locator('[data-testid="decision-log-empty"]')
+            .count();
+
+          if (decisionLogItemCount > 0) {
+            try {
+              await decisionLogItem.click();
+              await page.waitForSelector('[data-testid="decision-log-detail-sheet"]', {
+                timeout: SCREENSHOT_TIMEOUT_MS,
+              });
+              await page.waitForTimeout(WAIT_MODAL_MS);
+              await captureScreenshot(
+                page,
+                outputRoot,
+                width,
+                sequence,
+                'decision-log-detail',
+                screenshots,
+              );
+              sequence += 1;
+              pushCheck('decision log detail sheet render', true);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              pushCheck('decision log detail sheet render', false, message);
+            }
+
+            try {
+              const closeButton = page
+                .locator('[data-testid="decision-log-detail-close"]')
+                .first();
+              if ((await closeButton.count()) > 0) {
+                await closeButton.click();
+              } else {
+                await page.keyboard.press('Escape');
+              }
+              await page.waitForSelector('[data-testid="decision-log-detail-sheet"]', {
+                state: 'detached',
+                timeout: SCREENSHOT_TIMEOUT_MS,
+              });
+              pushCheck('decision log detail sheet close', true);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : String(error);
+              pushCheck('decision log detail sheet close', false, message);
+            }
+          } else {
+            pushCheck(
+              'decision log empty-state visible',
+              decisionLogEmptyCount > 0,
+              decisionLogEmptyCount > 0 ? '' : 'no item and no empty-state',
+            );
+          }
+        }
+
+        const syncCardCount = await page
+          .locator('[data-testid="sync-reliability-card"]')
+          .count();
+        pushCheck(
+          'sync reliability card visible',
+          syncCardCount > 0,
+          syncCardCount > 0 ? '' : 'card missing',
+        );
+
+        const syncRetryButtonCount = await page
+          .locator('[data-testid="sync-retry-button"]')
+          .count();
+        pushCheck(
+          'sync retry button visible',
+          syncRetryButtonCount > 0,
+          syncRetryButtonCount > 0 ? '' : 'retry button missing',
+        );
+      }
     }
   } finally {
     await context.close();
@@ -408,8 +618,28 @@ async function main() {
       generatedAt,
       mode: 'dry-run',
       outputRoot,
+      summary: {
+        passed: true,
+        totalChecks: 0,
+        passedChecks: 0,
+        failedChecks: 0,
+        warningChecks: 0,
+        gatePolicy: 'error_only',
+      },
       viewports: VIEWPORT_WIDTHS.map((width) => ({ width, height: VIEWPORT_HEIGHT[width] })),
-      checklist: ['home', 'techtree', 'progress', 'profile', 'energy', 'voice', 'future', 'share', 'failure'],
+      checklist: [
+        'home',
+        'techtree',
+        'progress',
+        'profile',
+        'energy',
+        'voice',
+        'future',
+        'share',
+        'failure',
+        'decision-log',
+        'sync-reliability',
+      ],
     };
     await writeJson(path.join(outputRoot, 'report.json'), dryRunPayload);
     await fs.writeFile(
@@ -468,8 +698,9 @@ async function main() {
     await browser.close();
 
     const allChecks = viewports.flatMap((viewport) => viewport.checks);
+    const warningChecks = allChecks.filter((check) => !check.pass && check.severity === 'warning').length;
+    const failedChecks = allChecks.filter((check) => !check.pass && check.severity !== 'warning').length;
     const passedChecks = allChecks.filter((check) => check.pass).length;
-    const failedChecks = allChecks.length - passedChecks;
 
     const report = {
       generatedAt,
@@ -478,9 +709,11 @@ async function main() {
       outputRoot: normalizePath(outputRoot),
       summary: {
         passed: failedChecks === 0,
+        gatePolicy: 'error_only',
         totalChecks: allChecks.length,
         passedChecks,
         failedChecks,
+        warningChecks,
       },
       viewports,
       errors,

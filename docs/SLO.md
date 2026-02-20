@@ -10,6 +10,9 @@
 - DQI 계산 가능률: **99% 이상**
 - Decision structure 규칙 충족률(3옵션/2반증/3근거): **90% 이상**
 - 고위험 권한 무승인 실행: **0건**
+- Decision detail open rate(주간 활성 사용자 기준): **20% 이상**
+- Manual sync retry success rate: **95% 이상**
+- Outbox pending p95(24h): **10건 이하**
 
 ## SLI 정의
 - `app.error` 이벤트 / 총 세션 수
@@ -20,6 +23,9 @@
 - `execution.applied|delayed|skipped` 비율
 - `governance.permission_*`, `governance.risk_flagged` 비율
 - `qa:goldenset` pass/fail 추이
+- `ui.decision_log_opened`, `ui.decision_log_item_opened` 이벤트 비율
+- `sync.manual_retry_clicked/succeeded/failed` 비율
+- `sync.outbox_drain.remaining`의 p95
 
 ## 에러 버짓
 - 월 단위 가용성 기준 99.9% 유지
