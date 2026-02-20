@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+* {
+  @apply border-border;
+}
+
+.markdown-output h1,
+.markdown-output h2,
+.markdown-output h3,
+.markdown-output h4 {
+  @apply mt-4 mb-2 font-semibold;
+}
+
+.markdown-output p {
+  @apply mb-3 leading-7 text-sm;
+}
+
+.markdown-output ul,
+.markdown-output ol {
+  @apply mb-3 ml-5 list-disc;
+}
+
+.markdown-output code {
+  @apply rounded bg-muted px-1 py-0.5 text-xs;
+}
+
+.markdown-output pre {
+  @apply mb-3 overflow-auto rounded-lg bg-muted p-3 text-xs;
+}
