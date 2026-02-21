@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { RunnerWorkflowMap } from '@/components/workflow/runner-workflow-map';
 import type { Pilot, RunLog } from '@/lib/types';
 
 function createInitialStatuses(stepsLength: number): RunnerStepStatus[] {
@@ -26,6 +27,13 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+function statusText(status: RunnerStepStatus): string {
+  if (status === 'running') return '진행 중';
+  if (status === 'done') return '완료';
+  if (status === 'waiting_approval') return '승인 대기';
+  return '대기';
+}
+
 export function RunnerPage({ pilotId }: { pilotId: string }) {
   const [pilot, setPilot] = useState<Pilot | null>(null);
   const [logs, setLogs] = useState<RunLog[]>([]);
@@ -36,6 +44,7 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
   const [phase, setPhase] = useState<'idle' | 'running' | 'waiting_approval' | 'done' | 'error'>('idle');
   const [statuses, setStatuses] = useState<RunnerStepStatus[]>([]);
   const [approvalIndex, setApprovalIndex] = useState<number | null>(null);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
 
   const canRun = phase === 'idle' || phase === 'done' || phase === 'error';
   const waitingApproval = phase === 'waiting_approval';
@@ -54,6 +63,7 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
         setPilot(data.pilot);
         setLogs(data.runLogsLast3 ?? []);
         setStatuses(createInitialStatuses(data.pilot.steps.length));
+        setSelectedStepId(data.pilot.steps[0]?.id ?? null);
 
         const initialValues: Record<string, string> = {};
         data.pilot.inputs.forEach((input) => {
@@ -75,6 +85,18 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
     if (!pilot) return -1;
     return pilot.steps.findIndex((step) => step.requiresApproval);
   }, [pilot]);
+
+  const selectedStep = useMemo(() => {
+    if (!pilot || !selectedStepId) return null;
+    return pilot.steps.find((step) => step.id === selectedStepId) ?? null;
+  }, [pilot, selectedStepId]);
+
+  const selectedStepStatus = useMemo(() => {
+    if (!pilot || !selectedStep) return 'idle';
+    const stepIndex = pilot.steps.findIndex((step) => step.id === selectedStep.id);
+    if (stepIndex < 0) return 'idle';
+    return statuses[stepIndex] || 'idle';
+  }, [pilot, selectedStep, statuses]);
 
   function updateStatus(index: number, status: RunnerStepStatus) {
     setStatuses((prev) => prev.map((item, idx) => (idx === index ? status : item)));
@@ -264,7 +286,45 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
           </CardContent>
         </Card>
 
-        <StepList steps={pilot.steps} statuses={statuses} />
+        <div className="space-y-6">
+          <RunnerWorkflowMap
+            steps={pilot.steps}
+            statuses={statuses}
+            phase={phase}
+            outputReady={Boolean(output)}
+            selectedStepId={selectedStepId}
+            onSelectStep={setSelectedStepId}
+          />
+          <StepList
+            steps={pilot.steps}
+            statuses={statuses}
+            selectedStepId={selectedStepId}
+            onSelectStep={setSelectedStepId}
+          />
+
+          {selectedStep ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">선택 단계 상세</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-xs">
+                <p className="font-medium">
+                  {selectedStep.order}. {selectedStep.title}
+                </p>
+                <p className="text-muted-foreground">{selectedStep.description}</p>
+                <p className="text-muted-foreground">
+                  상태: {statusText(selectedStepStatus)} | type: {selectedStep.type} | tool: {selectedStep.tool} | approval:{' '}
+                  {selectedStep.requiresApproval ? '필요' : '불필요'}
+                </p>
+                {selectedStep.promptTemplate ? (
+                  <pre className="overflow-auto rounded-md border border-border bg-muted p-2 text-[11px] leading-relaxed">
+                    {selectedStep.promptTemplate}
+                  </pre>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </div>
 
       <Card>
@@ -296,6 +356,7 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
           onSaved={(next) => {
             setPilot(next);
             setStatuses(createInitialStatuses(next.steps.length));
+            setSelectedStepId((prev) => (prev && next.steps.some((step) => step.id === prev) ? prev : next.steps[0]?.id ?? null));
           }}
         />
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { BuilderWorkflowMap } from '@/components/workflow/builder-workflow-map';
 import type { Pilot, RecordMode } from '@/lib/types';
 
 type CreatePilotResponse = {
@@ -31,12 +32,28 @@ export function BuilderPage() {
   const [captureFile, setCaptureFile] = useState<File | null>(null);
 
   const [created, setCreated] = useState<CreatePilotResponse | null>(null);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const absoluteShareUrl = useMemo(() => {
     if (!created) return '';
     if (typeof window === 'undefined') return created.url;
     return new URL(created.url, window.location.origin).toString();
+  }, [created]);
+
+  const selectedStep = useMemo(() => {
+    if (!created || !selectedStepId) return null;
+    return created.pilot.steps.find((step) => step.id === selectedStepId) ?? null;
+  }, [created, selectedStepId]);
+
+  useEffect(() => {
+    if (!created?.pilot.steps.length) {
+      setSelectedStepId(null);
+      return;
+    }
+
+    const firstStepId = created.pilot.steps[0].id;
+    setSelectedStepId((prev) => (prev && created.pilot.steps.some((step) => step.id === prev) ? prev : firstStepId));
   }, [created]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -68,6 +85,7 @@ export function BuilderPage() {
       }
 
       setCreated(data as CreatePilotResponse);
+      setSelectedStepId((data as CreatePilotResponse).pilot.steps[0]?.id ?? null);
       toast.success('워크플로우를 생성했습니다. 링크를 공유해 바로 실행하세요.');
     } catch (error) {
       const message = error instanceof Error ? error.message : '생성 중 오류가 발생했습니다.';
@@ -213,6 +231,15 @@ export function BuilderPage() {
             <CardDescription>생성된 Steps, Inputs, 공유 링크를 확인하세요.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            <BuilderWorkflowMap
+              pilot={created?.pilot ?? null}
+              recordMode={recordMode}
+              selectedStepId={selectedStepId}
+              onSelectStep={setSelectedStepId}
+            />
+
+            <Separator />
+
             {!created ? (
               <p className="text-sm text-muted-foreground">아직 생성된 워크플로우가 없습니다.</p>
             ) : (
@@ -251,15 +278,39 @@ export function BuilderPage() {
                   <h3 className="text-sm font-semibold">Steps</h3>
                   <div className="space-y-2">
                     {created.pilot.steps.map((step) => (
-                      <div key={step.id} className="rounded-md border border-border p-2 text-xs">
+                      <button
+                        key={step.id}
+                        type="button"
+                        className={`w-full rounded-md border p-2 text-left text-xs transition ${
+                          selectedStepId === step.id
+                            ? 'border-sky-300/70 bg-sky-500/10'
+                            : 'border-border hover:border-sky-300/70'
+                        }`}
+                        onClick={() => setSelectedStepId(step.id)}
+                      >
                         <p className="font-medium">
                           {step.order}. {step.title}
                         </p>
                         <p className="text-muted-foreground">{step.description}</p>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
+
+                {selectedStep ? (
+                  <div className="space-y-2 rounded-lg border border-sky-300/40 bg-sky-500/5 p-3">
+                    <h3 className="text-sm font-semibold">선택 단계 상세</h3>
+                    <p className="text-xs text-muted-foreground">
+                      type: {selectedStep.type} | tool: {selectedStep.tool} | approval:{' '}
+                      {selectedStep.requiresApproval ? '필요' : '불필요'}
+                    </p>
+                    {selectedStep.promptTemplate ? (
+                      <pre className="overflow-auto rounded-md border border-border bg-muted p-2 text-[11px] leading-relaxed">
+                        {selectedStep.promptTemplate}
+                      </pre>
+                    ) : null}
+                  </div>
+                ) : null}
               </>
             )}
           </CardContent>

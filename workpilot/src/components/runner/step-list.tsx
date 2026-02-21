@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { WorkflowStep } from '@/lib/types';
 
 export type RunnerStepStatus = 'idle' | 'running' | 'done' | 'waiting_approval';
@@ -18,7 +19,17 @@ function classFromStatus(status: RunnerStepStatus): string {
   return 'bg-muted text-muted-foreground';
 }
 
-export function StepList({ steps, statuses }: { steps: WorkflowStep[]; statuses: RunnerStepStatus[] }) {
+export function StepList({
+  steps,
+  statuses,
+  selectedStepId,
+  onSelectStep
+}: {
+  steps: WorkflowStep[];
+  statuses: RunnerStepStatus[];
+  selectedStepId?: string | null;
+  onSelectStep?: (stepId: string) => void;
+}) {
   return (
     <Card>
       <CardHeader>
@@ -26,7 +37,15 @@ export function StepList({ steps, statuses }: { steps: WorkflowStep[]; statuses:
       </CardHeader>
       <CardContent className="space-y-2">
         {steps.map((step, index) => (
-          <div key={step.id} className="rounded-lg border border-border p-3">
+          <button
+            key={step.id}
+            type="button"
+            className={cn(
+              'w-full rounded-lg border border-border p-3 text-left transition hover:border-sky-300/70',
+              selectedStepId === step.id ? 'border-sky-300/70 bg-sky-500/10' : null
+            )}
+            onClick={onSelectStep ? () => onSelectStep(step.id) : undefined}
+          >
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-sm font-medium">
                 {step.order}. {step.title}
@@ -38,7 +57,7 @@ export function StepList({ steps, statuses }: { steps: WorkflowStep[]; statuses:
               <span>tool: {step.tool}</span>
               {step.requiresApproval ? <span>checkpoint</span> : null}
             </div>
-          </div>
+          </button>
         ))}
       </CardContent>
     </Card>
