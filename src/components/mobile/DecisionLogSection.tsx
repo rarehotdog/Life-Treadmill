@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock3, ListTree, Search, TriangleAlert } from 'lucide-react';
 import type { DecisionLogViewItem } from '../../types/app';
 import { Badge, Button, Card, CardContent, Input } from '../ui';
@@ -71,6 +71,19 @@ export default function DecisionLogSection({
   const [validationFilter, setValidationFilter] = useState<ValidationFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedWindowDays, setSelectedWindowDays] = useState<14 | 30>(14);
+
+  const resetFilters = useCallback(() => {
+    setSearchQuery('');
+    setValidationFilter('all');
+    setStatusFilter('all');
+    setSelectedWindowDays(14);
+    setExpanded(false);
+  }, []);
+
+  useEffect(() => {
+    // Policy: reset filters whenever user re-enters Progress/Decision Log section.
+    resetFilters();
+  }, [resetFilters]);
 
   const activeWindowDays = windowDays >= 30 ? selectedWindowDays : 14;
 
@@ -232,13 +245,7 @@ export default function DecisionLogSection({
               <button
                 type="button"
                 data-testid="decision-log-reset-filters"
-                onClick={() => {
-                  setSearchQuery('');
-                  setValidationFilter('all');
-                  setStatusFilter('all');
-                  setSelectedWindowDays(14);
-                  setExpanded(false);
-                }}
+                onClick={resetFilters}
                 className="caption-11 font-semibold text-gray-500 underline underline-offset-2"
               >
                 필터 초기화
@@ -269,6 +276,14 @@ export default function DecisionLogSection({
                 <p className="caption-12 mt-1 text-gray-500">
                   기간/상태/검색 조건을 조정해 다시 확인해보세요.
                 </p>
+                <Button
+                  data-testid="decision-log-empty-reset"
+                  variant="secondary"
+                  onClick={resetFilters}
+                  className="mt-3 h-8 rounded-lg px-3 caption-12"
+                >
+                  조건 초기화
+                </Button>
               </>
             )}
           </div>

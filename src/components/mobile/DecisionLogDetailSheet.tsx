@@ -59,6 +59,34 @@ function formatExecutionStatus(status: DecisionLogViewItem['execution']['latestS
   };
 }
 
+function formatValidationReason(reason: string): { title: string; detail: string } {
+  if (reason.includes('options must be at least 3')) {
+    return {
+      title: '옵션 개수 부족',
+      detail: '대안 옵션을 최소 3개 이상 제시해야 합니다.',
+    };
+  }
+
+  if (reason.includes('counter arguments')) {
+    return {
+      title: '반증 근거 부족',
+      detail: '각 옵션에 대해 최소 2개의 반증이 필요합니다.',
+    };
+  }
+
+  if (reason.includes('evidence must be at least 3')) {
+    return {
+      title: '근거 데이터 부족',
+      detail: '결정 근거(Evidence)를 3개 이상 확보해야 합니다.',
+    };
+  }
+
+  return {
+    title: '검증 규칙 미충족',
+    detail: reason,
+  };
+}
+
 export default function DecisionLogDetailSheet({
   isOpen,
   item,
@@ -207,11 +235,19 @@ export default function DecisionLogDetailSheet({
                 </div>
                 {item.validation.reasons.length > 0 ? (
                   <div className="mt-2 space-y-1">
-                    {item.validation.reasons.map((reason) => (
-                      <p key={reason} className="caption-12 text-amber-700">
-                        • {reason}
-                      </p>
-                    ))}
+                    {item.validation.reasons.map((reason) => {
+                      const meta = formatValidationReason(reason);
+                      return (
+                        <div key={reason} className="rounded-lg bg-amber-50 p-2">
+                          <p className="caption-12 font-semibold text-amber-800">
+                            {meta.title}
+                          </p>
+                          <p className="caption-12 mt-0.5 text-amber-700">
+                            {meta.detail}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="caption-12 mt-2 text-gray-500">
