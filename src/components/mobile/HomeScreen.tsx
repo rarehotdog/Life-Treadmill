@@ -113,7 +113,7 @@ export default function HomeScreen({
                   onClick={onOpenVoiceCheckIn}
                   variant="secondary"
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-gray-100"
+                  className="h-11 w-11 rounded-full bg-gray-100"
                 >
                   <Mic size={18} className="text-gray-600" />
                 </Button>
@@ -124,7 +124,7 @@ export default function HomeScreen({
                   onClick={onOpenShare}
                   variant="secondary"
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-gray-100"
+                  className="h-11 w-11 rounded-full bg-gray-100"
                 >
                   <Share2 size={18} className="text-gray-600" />
                 </Button>
@@ -134,7 +134,7 @@ export default function HomeScreen({
                 onClick={onOpenFutureSelf}
                 variant="secondary"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                className="h-11 w-11 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
               >
                 <Plus size={20} className="text-white" />
               </Button>
@@ -158,7 +158,7 @@ export default function HomeScreen({
               data-testid="open-energy-checkin"
               onClick={onOpenEnergy}
               variant="ghost"
-              className="h-auto rounded-xl border-0 bg-gradient-to-br from-purple-50 to-purple-100 px-3 py-2 text-left hover:bg-gradient-to-br"
+              className="h-auto min-h-11 rounded-xl border-0 bg-gradient-to-br from-purple-50 to-purple-100 px-3 py-2 text-left hover:bg-gradient-to-br"
             >
               <span>
                 <p className="mb-0.5 label-12 text-purple-600">{energy ? 'Energy' : 'D-Day'}</p>

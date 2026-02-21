@@ -4,9 +4,13 @@ on:
   pull_request:
     branches:
       - main
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
 
 jobs:
   quality-gate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -43,5 +47,51 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-screenshots-dry-run
-          path: artifacts/qa-screenshots/**/report.json
+          path: |
+            artifacts/qa-screenshots/**/report.json
+            artifacts/qa-screenshots/**/report.md
+          if-no-files-found: warn
+
+  nightly-full-capture:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Screenshot QA full capture
+        run: npm run qa:screenshots
+
+      - name: Goldenset QA
+        run: npm run qa:goldenset
+
+      - name: Upload screenshot capture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-screenshots-full-capture
+          path: artifacts/qa-screenshots/**
           if-no-files-found: warn

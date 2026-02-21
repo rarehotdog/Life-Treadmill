@@ -6,7 +6,7 @@ LTR 모바일 UI를 실제 기기 기준으로 검수하기 위한 자동 + 수�
 
 ### 사전 준비
 ```bash
-npm install -D playwright
+npm run qa:screenshots:install
 npm run dev
 ```
 
@@ -20,6 +20,11 @@ npm run qa:screenshots
 - `artifacts/qa-screenshots/<timestamp>/report.md`
 - `artifacts/qa-screenshots/<timestamp>/**/*.png`
 
+### CI 실행 정책
+- PR: `qa:screenshots:dry`만 실행 (빠른 게이트)
+- Nightly/수동 워크플로우: `qa:screenshots` 전체 캡처 실행
+- 아티팩트: `report.json`, `report.md`, `*.png` 업로드
+
 ### 자동 검증 범위
 - Viewport: `375 / 390 / 430`
 - Screen: `Home`, `Journey`, `Progress`, `Profile`
@@ -27,7 +32,7 @@ npm run qa:screenshots
 - Progress 확장:
   - `Decision Log` 카드 존재
   - Decision Log `14일/30일` 토글, 검색 인풋, validation/status 필터 존재
-  - 검색 no-match 시 empty-state 노출 + 필터 초기화 동작
+  - 검색 no-match 시 empty-state 노출 + `조건 초기화` CTA 노출/동작
   - Decision item 탭 시 `DecisionLogDetailSheet` 렌더/닫힘
   - `Sync Reliability` 카드 + `지금 동기화` 버튼 존재
 - Layout guard:

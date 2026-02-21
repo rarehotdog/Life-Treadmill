@@ -10,6 +10,14 @@
 7. `qa:screenshots` report에서 `failedChecks=0` 확인
 8. warning은 릴리즈 차단 없이 backlog 이슈로 등록
 
+### CI 실행 기준
+- PR: `mobile-qa.yml`에서 dry-run 게이트만 실행
+- Nightly/수동 실행: Playwright Chromium 설치 후 full capture 실행
+- 아티팩트 확인 경로:
+  - `artifacts/qa-screenshots/**/report.json`
+  - `artifacts/qa-screenshots/**/report.md`
+  - `artifacts/qa-screenshots/**/*.png`
+
 ## 2) 점진 롤아웃 절차
 1. 1차 배포(10%):
    - `VITE_FLAG_DECISION_LOG_UI_V1_ROLLOUT=10`

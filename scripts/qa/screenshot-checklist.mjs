@@ -269,7 +269,11 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
       const exceptions = [];
       const nodes = root.querySelectorAll('[class]');
       for (const node of nodes) {
-        const classes = (node.className || '').split(/\s+/).filter(Boolean);
+        const classValue =
+          typeof node.className === 'string'
+            ? node.className
+            : node.getAttribute('class') || '';
+        const classes = classValue.split(/\s+/).filter(Boolean);
         const text = (node.textContent || '').trim();
         const hasLabelChars = /[A-Za-z0-9가-힣]/.test(text.replace(/\s+/g, ''));
 
@@ -374,7 +378,13 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
       }
 
       try {
-        await openButton.click();
+        await page.evaluate((selector) => {
+          const element = document.querySelector(selector);
+          if (!(element instanceof HTMLElement)) {
+            throw new Error(`open trigger not found: ${selector}`);
+          }
+          element.click();
+        }, flow.open);
         await page.waitForSelector(flow.modal, { timeout: SCREENSHOT_TIMEOUT_MS });
         await page.waitForTimeout(WAIT_MODAL_MS);
         await captureScreenshot(page, outputRoot, width, sequence, flow.label, screenshots);
@@ -480,7 +490,11 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
         const exceptions = [];
         const nodes = root.querySelectorAll('[class]');
         for (const node of nodes) {
-          const classes = (node.className || '').split(/\s+/).filter(Boolean);
+          const classValue =
+            typeof node.className === 'string'
+              ? node.className
+              : node.getAttribute('class') || '';
+          const classes = classValue.split(/\s+/).filter(Boolean);
           const text = (node.textContent || '').trim();
           const hasLabelChars = /[A-Za-z0-9가-힣]/.test(text.replace(/\s+/g, ''));
           for (const className of classes) {
@@ -574,6 +588,15 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
               'decision log search no-match state',
               emptyAfterSearch > 0,
               emptyAfterSearch > 0 ? '' : 'empty-state not shown after no-match query',
+            );
+
+            const emptyResetCtaCount = await page
+              .locator('[data-testid="decision-log-empty-reset"]')
+              .count();
+            pushCheck(
+              'decision log no-match reset CTA',
+              emptyResetCtaCount > 0,
+              emptyResetCtaCount > 0 ? '' : 'empty reset CTA missing',
             );
 
             const resetFilterButton = page
@@ -726,7 +749,7 @@ async function main() {
   const playwright = await resolvePlaywright();
   if (!playwright) {
     process.stderr.write(
-      '[qa] playwright package is missing. install it first with "npm install -D playwright" and run again.\n',
+      '[qa] playwright package is missing. run "npm run qa:screenshots:install" and retry.\n',
     );
     process.exitCode = 1;
     return;
@@ -756,9 +779,20 @@ async function main() {
       throw new Error(`server boot timeout (${baseUrl})`);
     }
 
-    const browser = await playwright.chromium.launch({
-      headless: !args.headed,
-    });
+    let browser;
+    try {
+      browser = await playwright.chromium.launch({
+        headless: !args.headed,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('Executable') || message.includes('install')) {
+        throw new Error(
+          `${message}\n[qa] Chromium executable is missing. run "npm run qa:screenshots:install" and retry.`,
+        );
+      }
+      throw error;
+    }
 
     const viewports = [];
     for (const width of VIEWPORT_WIDTHS) {

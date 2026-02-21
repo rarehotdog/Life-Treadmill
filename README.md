@@ -143,9 +143,13 @@ npm run qa:goldenset
 
 Playwright 기반 실캡처 QA:
 ```bash
-npm install -D playwright
+npm run qa:screenshots:install
 npm run qa:screenshots
 ```
+
+GitHub Actions 정책:
+- PR: `qa:screenshots:dry` + `qa:goldenset` 게이트
+- Nightly/수동: Playwright full capture + report 아티팩트 업로드
 
 ## Environment Variables
 LTR는 provider fallback 구조로 동작합니다. (Gemini -> OpenAI -> deterministic local fallback)
