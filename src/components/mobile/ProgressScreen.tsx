@@ -7,6 +7,7 @@ import type {
   ExecutionMetrics,
   SafetyMetrics,
   SyncDiagnostics,
+  SyncRetryResult,
   UserProfile,
 } from '../../types/app';
 import type { UserStats } from '../../lib/gamification';
@@ -34,7 +35,7 @@ interface ProgressScreenProps {
   syncStatusUiEnabled?: boolean;
   syncDiagnostics?: SyncDiagnostics;
   isSyncing?: boolean;
-  onSyncRetry?: () => Promise<void>;
+  onSyncRetry?: () => Promise<SyncRetryResult>;
   remoteSyncEnabled?: boolean;
 }
 
@@ -73,6 +74,11 @@ export default function ProgressScreen({
   remoteSyncEnabled = false,
 }: ProgressScreenProps) {
   const [yearImage, setYearImage] = useState<string | null>(null);
+  const [yearImageSaveError, setYearImageSaveError] = useState<string | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
   const [isDecisionDetailOpen, setIsDecisionDetailOpen] = useState(false);
   const [selectedDecisionItem, setSelectedDecisionItem] = useState<DecisionLogViewItem | null>(
     null,
@@ -126,7 +132,16 @@ export default function ProgressScreen({
     reader.onloadend = () => {
       const result = reader.result as string;
       setYearImage(result);
-      setItemString(STORAGE_KEYS.yearImage(goalImageKey), result);
+      const writeResult = setItemString(STORAGE_KEYS.yearImage(goalImageKey), result);
+      if (!writeResult.success) {
+        setYearImageSaveError('이미지 저장에 실패했어요. 저장공간 상태를 확인해 주세요.');
+        trackEvent('storage.write_failed', {
+          scope: 'progress_year_image',
+          reason: writeResult.reason ?? 'unknown',
+        });
+        return;
+      }
+      setYearImageSaveError(null);
     };
     reader.readAsDataURL(file);
   };
@@ -147,6 +162,42 @@ export default function ProgressScreen({
     });
     setIsDecisionDetailOpen(false);
     setSelectedDecisionItem(null);
+  };
+
+  const syncRetryDisabled =
+    isSyncing || !onSyncRetry || !syncState.online || !remoteSyncEnabled;
+  const syncRetryLabel = !remoteSyncEnabled
+    ? '클라우드 미설정'
+    : !syncState.online
+      ? '오프라인 상태'
+      : isSyncing
+        ? '동기화 중...'
+        : '지금 동기화';
+
+  const handleSyncRetryClick = async () => {
+    if (!onSyncRetry) return;
+    const result = await onSyncRetry();
+
+    if (result.status === 'succeeded') {
+      setSyncFeedback({
+        type: 'success',
+        message: result.message,
+      });
+      return;
+    }
+
+    if (result.status === 'failed') {
+      setSyncFeedback({
+        type: 'error',
+        message: result.message,
+      });
+      return;
+    }
+
+    setSyncFeedback({
+      type: 'info',
+      message: result.message,
+    });
   };
 
   useEffect(() => {
@@ -221,6 +272,9 @@ export default function ProgressScreen({
                 className="hidden"
               />
             </div>
+            {yearImageSaveError ? (
+              <p className="caption-12 text-rose-100">{yearImageSaveError}</p>
+            ) : null}
 
             <div>
               <div className="mb-2 flex items-center justify-between">
@@ -466,15 +520,27 @@ export default function ProgressScreen({
               <Button
                 data-testid="sync-retry-button"
                 onClick={() => {
-                  if (!onSyncRetry) return;
-                  void onSyncRetry();
+                  void handleSyncRetryClick();
                 }}
-                disabled={isSyncing || !onSyncRetry}
+                disabled={syncRetryDisabled}
                 className="mt-3 w-full cta-secondary"
               >
                 <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? '동기화 중...' : '지금 동기화'}
+                {syncRetryLabel}
               </Button>
+              {syncFeedback ? (
+                <div
+                  className={`mt-2 rounded-lg px-3 py-2 caption-12 ${
+                    syncFeedback.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : syncFeedback.type === 'error'
+                        ? 'bg-rose-50 text-rose-700'
+                        : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {syncFeedback.message}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         ) : null}

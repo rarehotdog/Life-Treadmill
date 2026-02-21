@@ -82,6 +82,7 @@ import type {
   SafetyMetrics,
   Screen,
   SyncDiagnostics,
+  SyncRetryResult,
   UserProfile,
   VoiceCheckInEntry,
 } from '../../types/app';
@@ -151,7 +152,7 @@ interface UseAppOrchestratorResult {
   handleStartCustomization: () => void;
   handleFutureSelfSave: (prompt: string) => void;
   handleVoiceCheckInSave: (entry: VoiceCheckInEntry) => Promise<void>;
-  handleSyncRetry: () => Promise<void>;
+  handleSyncRetry: () => Promise<SyncRetryResult>;
 }
 
 export function useAppOrchestrator(): UseAppOrchestratorResult {
@@ -1209,7 +1210,7 @@ export function useAppOrchestrator(): UseAppOrchestratorResult {
     ],
   );
 
-  const handleSyncRetry = useCallback(async () => {
+  const handleSyncRetry = useCallback(async (): Promise<SyncRetryResult> => {
     trackEvent('sync.manual_retry_clicked', {
       online: typeof navigator === 'undefined' ? true : navigator.onLine,
     });
@@ -1217,13 +1218,21 @@ export function useAppOrchestrator(): UseAppOrchestratorResult {
     if (!isSupabaseConfigured()) {
       showTransientMessage('클라우드 동기화가 비활성화되어 있어요.', 2500);
       refreshSyncDiagnostics();
-      return;
+      return {
+        status: 'disabled',
+        message: '클라우드 동기화가 비활성화되어 있어요.',
+        summary: null,
+      };
     }
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       showTransientMessage('오프라인 상태예요. 연결되면 자동 동기화돼요.', 2500);
       refreshSyncDiagnostics();
-      return;
+      return {
+        status: 'offline',
+        message: '오프라인 상태예요. 온라인 복귀 후 다시 시도해 주세요.',
+        summary: null,
+      };
     }
 
     setIsSyncing(true);
@@ -1238,7 +1247,11 @@ export function useAppOrchestrator(): UseAppOrchestratorResult {
           dropped: summary.dropped,
         });
         showTransientMessage('동기화 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.', 3000);
-        return;
+        return {
+          status: 'failed',
+          message: '동기화 실패: 잠시 후 다시 시도해 주세요.',
+          summary,
+        };
       }
 
       trackEvent('sync.manual_retry_succeeded', {
@@ -1249,8 +1262,18 @@ export function useAppOrchestrator(): UseAppOrchestratorResult {
 
       if (summary.remaining > 0 || summary.dropped > 0) {
         showTransientMessage(`동기화 완료: 남은 ${summary.remaining}건`, 2500);
+        return {
+          status: 'succeeded',
+          message: `동기화 완료: 남은 ${summary.remaining}건`,
+          summary,
+        };
       } else {
         showTransientMessage('동기화를 완료했어요.', 2200);
+        return {
+          status: 'succeeded',
+          message: '동기화를 완료했어요.',
+          summary,
+        };
       }
     } catch (error) {
       trackError(error, {
@@ -1260,6 +1283,11 @@ export function useAppOrchestrator(): UseAppOrchestratorResult {
         reason: error instanceof Error ? error.message : String(error),
       });
       showTransientMessage('동기화 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.', 3000);
+      return {
+        status: 'failed',
+        message: '동기화 실패: 잠시 후 다시 시도해 주세요.',
+        summary: null,
+      };
     } finally {
       setIsSyncing(false);
       refreshSyncDiagnostics();
