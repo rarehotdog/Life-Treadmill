@@ -20,6 +20,53 @@ type CreatePilotResponse = {
   compileMode: 'openai' | 'fallback';
 };
 
+type BuilderTemplate = {
+  id: string;
+  label: string;
+  mode: RecordMode;
+  name: string;
+  taskDescription?: string;
+  prompt?: string;
+  inputsCsv?: string;
+  exampleInput?: string;
+  exampleOutput?: string;
+  captureNote?: string;
+};
+
+const builderTemplates: BuilderTemplate[] = [
+  {
+    id: 'weekly-report',
+    label: '주간 리포트',
+    mode: 'describe',
+    name: '주간 리포트 자동 작성',
+    taskDescription:
+      '매주 금요일 17시에 지난주 주요 지표를 3줄 인사이트로 요약하고, 공유용 마크다운 포맷으로 정리한다.',
+    exampleInput: '리드 20건, 전환율 24%, 이탈 고객 2건, 주요 이슈 1건',
+    exampleOutput: '핵심 지표 요약 + 인사이트 + 다음 액션'
+  },
+  {
+    id: 'sales-followup',
+    label: '세일즈 팔로업',
+    mode: 'prompt',
+    name: '세일즈 후속 메일 작성',
+    inputsCsv:
+      'key,label,required,placeholder\ncompany_name,고객사 이름,true,회사명을 입력하세요\nmeeting_summary,미팅 요약,true,핵심 논의 내용을 입력하세요\nnext_action,다음 액션,true,예: 데모 일정 확정',
+    prompt:
+      '입력값을 바탕으로 전문적인 후속 이메일을 작성하세요. 본문은 한국어, 마지막에 다음 액션을 체크리스트로 제시하세요.',
+    exampleInput: 'company_name=Acme, meeting_summary=제품 데모 긍정적, next_action=기술 검토 미팅',
+    exampleOutput: '안녕하세요 ... 다음 액션: [ ] 기술 검토 미팅 확정'
+  },
+  {
+    id: 'capture-recap',
+    label: '캡처 기반 요약',
+    mode: 'capture',
+    name: '캡처 기반 데이터 요약',
+    captureNote: '스프레드시트 화면에서 핵심 수치를 읽고 팀 공유용 요약 메시지를 만든다.',
+    exampleInput: 'capture + 메모',
+    exampleOutput: '요약/인사이트/리스크 3단 구성'
+  }
+];
+
 export function BuilderPage() {
   const [name, setName] = useState('');
   const [recordMode, setRecordMode] = useState<RecordMode>('capture');
@@ -33,6 +80,7 @@ export function BuilderPage() {
 
   const [created, setCreated] = useState<CreatePilotResponse | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const absoluteShareUrl = useMemo(() => {
@@ -55,6 +103,36 @@ export function BuilderPage() {
     const firstStepId = created.pilot.steps[0].id;
     setSelectedStepId((prev) => (prev && created.pilot.steps.some((step) => step.id === prev) ? prev : firstStepId));
   }, [created]);
+
+  function applyTemplate(template: BuilderTemplate) {
+    setSelectedTemplateId(template.id);
+    setRecordMode(template.mode);
+    setName(template.name);
+    setTaskDescription(template.taskDescription ?? '');
+    setPrompt(template.prompt ?? '');
+    setInputsCsv(template.inputsCsv ?? '');
+    setExampleInput(template.exampleInput ?? '');
+    setExampleOutput(template.exampleOutput ?? '');
+    setCaptureNote(template.captureNote ?? '');
+    setCaptureFile(null);
+    toast.success(`'${template.label}' 템플릿을 적용했습니다.`);
+  }
+
+  function resetBuilderInputs() {
+    setSelectedTemplateId(null);
+    setName('');
+    setRecordMode('capture');
+    setTaskDescription('');
+    setPrompt('');
+    setInputsCsv('');
+    setExampleInput('');
+    setExampleOutput('');
+    setCaptureNote('');
+    setCaptureFile(null);
+    setCreated(null);
+    setSelectedStepId(null);
+    toast.success('Builder 입력을 초기화했습니다.');
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -114,6 +192,30 @@ export function BuilderPage() {
           반복 업무를 한 번만 기록하면, 실행 가능한 워크플로우 링크를 즉시 생성합니다.
         </p>
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>데모 템플릿</CardTitle>
+          <CardDescription>원클릭으로 예시 업무를 채워 바로 Compile을 테스트할 수 있습니다.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {builderTemplates.map((template) => (
+            <Button
+              key={template.id}
+              type="button"
+              variant="outline"
+              size="sm"
+              className={selectedTemplateId === template.id ? 'border-sky-300/70 bg-sky-500/10' : undefined}
+              onClick={() => applyTemplate(template)}
+            >
+              {template.label}
+            </Button>
+          ))}
+          <Button type="button" variant="ghost" size="sm" onClick={resetBuilderInputs}>
+            입력 초기화
+          </Button>
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <Card>

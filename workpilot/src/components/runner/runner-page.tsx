@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { RunnerWorkflowMap } from '@/components/workflow/runner-workflow-map';
+import { cn } from '@/lib/utils';
 import type { Pilot, RunLog } from '@/lib/types';
 
 function createInitialStatuses(stepsLength: number): RunnerStepStatus[] {
@@ -45,9 +46,11 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
   const [statuses, setStatuses] = useState<RunnerStepStatus[]>([]);
   const [approvalIndex, setApprovalIndex] = useState<number | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   const canRun = phase === 'idle' || phase === 'done' || phase === 'error';
   const waitingApproval = phase === 'waiting_approval';
+  const draftStorageKey = useMemo(() => `workpilot:runner-draft:${pilotId}`, [pilotId]);
 
   useEffect(() => {
     async function loadPilot() {
@@ -64,11 +67,35 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
         setLogs(data.runLogsLast3 ?? []);
         setStatuses(createInitialStatuses(data.pilot.steps.length));
         setSelectedStepId(data.pilot.steps[0]?.id ?? null);
+        setShowValidation(false);
 
         const initialValues: Record<string, string> = {};
         data.pilot.inputs.forEach((input) => {
           initialValues[input.key] = '';
         });
+
+        try {
+          const rawDraft = localStorage.getItem(draftStorageKey);
+          if (rawDraft) {
+            const parsedDraft = JSON.parse(rawDraft) as Record<string, string>;
+            data.pilot.inputs.forEach((input) => {
+              if (typeof parsedDraft[input.key] === 'string') {
+                initialValues[input.key] = parsedDraft[input.key];
+              }
+            });
+          } else {
+            const latestRunValues = data.runLogsLast3?.[0]?.inputValues;
+            if (latestRunValues) {
+              data.pilot.inputs.forEach((input) => {
+                if (typeof latestRunValues[input.key] === 'string') {
+                  initialValues[input.key] = latestRunValues[input.key];
+                }
+              });
+            }
+          }
+        } catch {
+          // ignore malformed draft and continue with blank defaults
+        }
         setValues(initialValues);
       } catch (error) {
         const message = error instanceof Error ? error.message : '로딩 중 오류가 발생했습니다.';
@@ -79,7 +106,17 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
     }
 
     void loadPilot();
-  }, [pilotId]);
+  }, [draftStorageKey, pilotId]);
+
+  useEffect(() => {
+    if (!pilot) return;
+
+    try {
+      localStorage.setItem(draftStorageKey, JSON.stringify(values));
+    } catch {
+      // ignore storage errors on private mode/quota
+    }
+  }, [draftStorageKey, pilot, values]);
 
   const firstApprovalStep = useMemo(() => {
     if (!pilot) return -1;
@@ -97,6 +134,63 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
     if (stepIndex < 0) return 'idle';
     return statuses[stepIndex] || 'idle';
   }, [pilot, selectedStep, statuses]);
+
+  const requiredMissingKeys = useMemo(() => {
+    if (!pilot) return [];
+
+    return pilot.inputs
+      .filter((field) => field.required)
+      .filter((field) => !values[field.key]?.trim())
+      .map((field) => field.key);
+  }, [pilot, values]);
+
+  const requiredMissingSet = useMemo(() => new Set(requiredMissingKeys), [requiredMissingKeys]);
+
+  function validateBeforeRun(): boolean {
+    if (!pilot) return false;
+    if (requiredMissingKeys.length === 0) return true;
+
+    const missingLabels = pilot.inputs
+      .filter((field) => requiredMissingSet.has(field.key))
+      .map((field) => field.label)
+      .slice(0, 3)
+      .join(', ');
+
+    toast.error(`필수 입력을 채워주세요: ${missingLabels}`);
+    return false;
+  }
+
+  function applyInputValues(nextValues: Record<string, string>) {
+    if (!pilot) return;
+
+    const normalized: Record<string, string> = {};
+    pilot.inputs.forEach((input) => {
+      normalized[input.key] = nextValues[input.key] ?? '';
+    });
+    setValues(normalized);
+  }
+
+  function handleUseLatestInputs() {
+    if (!logs.length) {
+      toast.error('최근 실행 이력이 없습니다.');
+      return;
+    }
+
+    applyInputValues(logs[0].inputValues);
+    toast.success('최근 실행 입력값을 불러왔습니다.');
+  }
+
+  function handleResetInputs() {
+    if (!pilot) return;
+
+    const resetValues: Record<string, string> = {};
+    pilot.inputs.forEach((input) => {
+      resetValues[input.key] = '';
+    });
+    setValues(resetValues);
+    setShowValidation(false);
+    toast.success('입력값을 초기화했습니다.');
+  }
 
   function updateStatus(index: number, status: RunnerStepStatus) {
     setStatuses((prev) => prev.map((item, idx) => (idx === index ? status : item)));
@@ -161,6 +255,11 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
 
   async function handleRun() {
     if (!pilot || !canRun) return;
+    setShowValidation(true);
+
+    if (!validateBeforeRun()) {
+      return;
+    }
 
     setOutput('');
     setPhase('running');
@@ -257,6 +356,7 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
                     }))
                   }
                   placeholder={field.placeholder || `${field.label} 입력`}
+                  className={cn(showValidation && requiredMissingSet.has(field.key) ? 'border-red-400/80 focus-visible:ring-red-400/70' : null)}
                 />
               </div>
             ))}
@@ -280,9 +380,24 @@ export function RunnerPage({ pilotId }: { pilotId: string }) {
                       ? '승인 대기'
                       : phase === 'done'
                         ? '완료'
-                        : '오류'}
+                  : '오류'}
               </Badge>
             </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={handleUseLatestInputs}>
+                최근 실행값 불러오기
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={handleResetInputs}>
+                입력 초기화
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">입력값은 현재 브라우저에 자동 저장됩니다.</p>
+
+            {showValidation && requiredMissingKeys.length > 0 ? (
+              <p className="text-xs text-red-300">필수 입력 {requiredMissingKeys.length}개가 누락되었습니다.</p>
+            ) : null}
           </CardContent>
         </Card>
 
