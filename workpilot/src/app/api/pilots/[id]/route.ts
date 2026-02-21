@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getPilot, getRunLogs, updatePilot } from '@/lib/store';
+import { getRequestId, jsonWithRequestId } from '@/lib/request';
 import type { InputField, WorkflowStep } from '@/lib/types';
 
 const inputSchema = z.object({
@@ -97,22 +97,27 @@ function normalizeInputs(inputs: InputField[]): InputField[] {
       ];
 }
 
-export async function GET(_: Request, context: { params: { id: string } }) {
-  const pilot = getPilot(context.params.id);
+export async function GET(request: Request, context: { params: { id: string } }) {
+  const requestId = getRequestId(request);
+  const pilot = await getPilot(context.params.id, { requestId });
   if (!pilot) {
-    return NextResponse.json({ error: 'Pilot을 찾을 수 없습니다.' }, { status: 404 });
+    return jsonWithRequestId({ error: 'Pilot을 찾을 수 없습니다.' }, requestId, { status: 404 });
   }
 
-  return NextResponse.json({
-    pilot,
-    runLogsLast3: getRunLogs(context.params.id, 3)
-  });
+  return jsonWithRequestId(
+    {
+      pilot,
+      runLogsLast3: await getRunLogs(context.params.id, 3, { requestId }),
+    },
+    requestId,
+  );
 }
 
 export async function PATCH(request: Request, context: { params: { id: string } }) {
-  const pilot = getPilot(context.params.id);
+  const requestId = getRequestId(request);
+  const pilot = await getPilot(context.params.id, { requestId });
   if (!pilot) {
-    return NextResponse.json({ error: 'Pilot을 찾을 수 없습니다.' }, { status: 404 });
+    return jsonWithRequestId({ error: 'Pilot을 찾을 수 없습니다.' }, requestId, { status: 404 });
   }
 
   try {
@@ -120,29 +125,38 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     const parsed = patchBodySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0]?.message || '요청이 올바르지 않습니다.' }, { status: 400 });
+      return jsonWithRequestId(
+        { error: parsed.error.issues[0]?.message || '요청이 올바르지 않습니다.' },
+        requestId,
+        { status: 400 },
+      );
     }
 
-    const updated = updatePilot(context.params.id, (prev) => {
-      const nextSteps = parsed.data.steps ? normalizeSteps(parsed.data.steps) : prev.steps;
-      const nextInputs = parsed.data.inputs ? normalizeInputs(parsed.data.inputs) : prev.inputs;
+    const updated = await updatePilot(
+      context.params.id,
+      (prev) => {
+        const nextSteps = parsed.data.steps ? normalizeSteps(parsed.data.steps) : prev.steps;
+        const nextInputs = parsed.data.inputs ? normalizeInputs(parsed.data.inputs) : prev.inputs;
 
-      return {
-        ...prev,
-        oneLiner: parsed.data.oneLiner ?? prev.oneLiner,
-        inputs: nextInputs,
-        steps: nextSteps,
-        version: prev.version + 1
-      };
-    });
+        return {
+          ...prev,
+          oneLiner: parsed.data.oneLiner ?? prev.oneLiner,
+          inputs: nextInputs,
+          steps: nextSteps,
+          version: prev.version + 1,
+        };
+      },
+      { requestId },
+    );
 
     if (!updated) {
-      return NextResponse.json({ error: 'Pilot을 찾을 수 없습니다.' }, { status: 404 });
+      return jsonWithRequestId({ error: 'Pilot을 찾을 수 없습니다.' }, requestId, { status: 404 });
     }
 
-    return NextResponse.json({ pilot: updated });
+    return jsonWithRequestId({ pilot: updated }, requestId);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Pilot 수정 중 오류가 발생했습니다.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error(`[api/pilots/:id] requestId=${requestId} error=${message}`);
+    return jsonWithRequestId({ error: message }, requestId, { status: 500 });
   }
 }

@@ -1,10 +1,10 @@
 import { randomUUID } from 'crypto';
 
-import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { buildDefaultName, compileWorkflow } from '@/lib/compile';
 import { savePilot } from '@/lib/store';
+import { getRequestId, jsonWithRequestId } from '@/lib/request';
 import type { Pilot, RecordMode } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -25,6 +25,8 @@ async function fileToDataUrl(file: File): Promise<string> {
 }
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
+
   try {
     const formData = await request.formData();
 
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
 
     const modeParse = createModeSchema.safeParse(modeValue);
     if (!modeParse.success) {
-      return NextResponse.json({ error: 'recordMode 값이 올바르지 않습니다.' }, { status: 400 });
+      return jsonWithRequestId({ error: 'recordMode 값이 올바르지 않습니다.' }, requestId, { status: 400 });
     }
 
     const recordMode = modeParse.data as RecordMode;
@@ -43,10 +45,10 @@ export async function POST(request: Request) {
 
     if (captureFileEntry instanceof File && captureFileEntry.size > 0) {
       if (!captureFileEntry.type.startsWith('image/')) {
-        return NextResponse.json({ error: '이미지 파일만 업로드할 수 있습니다.' }, { status: 400 });
+        return jsonWithRequestId({ error: '이미지 파일만 업로드할 수 있습니다.' }, requestId, { status: 400 });
       }
       if (captureFileEntry.size > 5 * 1024 * 1024) {
-        return NextResponse.json({ error: '이미지 파일은 5MB 이하만 허용됩니다.' }, { status: 400 });
+        return jsonWithRequestId({ error: '이미지 파일은 5MB 이하만 허용됩니다.' }, requestId, { status: 400 });
       }
       captureDataUrl = await fileToDataUrl(captureFileEntry);
     }
@@ -83,15 +85,19 @@ export async function POST(request: Request) {
       createdAt
     };
 
-    savePilot(pilot);
+    await savePilot(pilot, { requestId });
 
-    return NextResponse.json({
-      pilot,
-      url: `/pilot/${id}`,
-      compileMode: mode
-    });
+    return jsonWithRequestId(
+      {
+        pilot,
+        url: `/pilot/${id}`,
+        compileMode: mode,
+      },
+      requestId,
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Pilot 생성 중 오류가 발생했습니다.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error(`[api/pilots] requestId=${requestId} error=${message}`);
+    return jsonWithRequestId({ error: message }, requestId, { status: 500 });
   }
 }
