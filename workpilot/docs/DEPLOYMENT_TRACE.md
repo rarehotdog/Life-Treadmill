@@ -17,3 +17,10 @@ Production 배포 추적은 아래 3개를 함께 기록합니다.
 ## Notes
 - 이번 단계는 **Vercel Production 환경만** Supabase 키를 연결합니다.
 - Preview/Development 환경은 DB 미연결 상태를 기본값으로 유지합니다.
+
+## Pending Rollout
+- Pushed to `workpilot/main`: `d40e2f3`
+- Source branch: `codex/workpilot` (subtree split from monorepo `workpilot/` prefix)
+- Verification time (UTC): 2026-02-21
+- Observation: `https://workpilot-lemon.vercel.app/api/health` is still returning 404 HTML.
+- Action needed: Vercel dashboard에서 연결 레포/프로덕션 브랜치/Root Directory와 Environment Variables를 확인 후 재배포.
