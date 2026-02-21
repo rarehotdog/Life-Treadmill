@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from './utils';
+import { navigationMenuTriggerStyle } from './_shared/navigation-menu';
 
 export function NavigationMenu({
   className,
@@ -22,10 +23,6 @@ export function NavigationMenuList({ className, ...props }: React.ComponentProps
 
 export function NavigationMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
   return <li data-slot="navigation-menu-item" className={cn('relative', className)} {...props} />;
-}
-
-export function navigationMenuTriggerStyle() {
-  return 'inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100';
 }
 
 export function NavigationMenuTrigger({ className, children, ...props }: React.ComponentProps<'button'>) {

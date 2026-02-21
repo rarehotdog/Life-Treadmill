@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from './utils';
-import { buttonVariants } from './button';
+import { buttonVariants } from './_shared/button';
 
 type CalendarProps = React.ComponentProps<'div'> & {
   month?: Date;

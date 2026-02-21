@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { type ToggleSize, type ToggleVariant, toggleVariants } from './toggle';
+import { type ToggleSize, type ToggleVariant, toggleVariants } from './_shared/toggle';
 import { cn } from './utils';
 
 type ToggleGroupContextValue = {

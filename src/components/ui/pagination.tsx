@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { cn } from './utils';
-import { buttonVariants } from './button';
+import { buttonVariants } from './_shared/button';
 
 export function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
   return <nav role="navigation" aria-label="pagination" data-slot="pagination" className={cn('mx-auto flex w-full justify-center', className)} {...props} />;
