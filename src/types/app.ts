@@ -226,6 +226,12 @@ export interface SyncDiagnostics {
   lastDrain: SyncDrainSummary | null;
 }
 
+export interface SyncRetryResult {
+  status: 'succeeded' | 'failed' | 'offline' | 'disabled';
+  message: string;
+  summary: SyncDrainSummary | null;
+}
+
 export type AppEventLevel = 'info' | 'warn' | 'error';
 
 export interface AppEvent {
@@ -261,6 +267,7 @@ export interface AppEvent {
     | 'sync.manual_retry_clicked'
     | 'sync.manual_retry_succeeded'
     | 'sync.manual_retry_failed'
+    | 'storage.write_failed'
     | 'ui.modal_opened'
     | 'ui.modal_closed'
     | string;

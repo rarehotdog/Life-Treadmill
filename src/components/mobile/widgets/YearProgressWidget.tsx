@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { getYearImage, setItemString, STORAGE_KEYS } from '../../../lib/app-storage';
+import { trackEvent } from '../../../lib/telemetry';
 
 interface YearProgressWidgetProps {
   currentDay: number;
@@ -10,6 +11,7 @@ interface YearProgressWidgetProps {
 
 export default function YearProgressWidget({ currentDay, goalId }: YearProgressWidgetProps) {
   const [yearImage, setYearImage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const today = new Date();
@@ -32,7 +34,16 @@ export default function YearProgressWidget({ currentDay, goalId }: YearProgressW
     reader.onloadend = () => {
       const result = reader.result as string;
       setYearImage(result);
-      setItemString(STORAGE_KEYS.yearImage(goalId), result);
+      const writeResult = setItemString(STORAGE_KEYS.yearImage(goalId), result);
+      if (!writeResult.success) {
+        setSaveError('이미지 저장 실패: 저장공간을 확인해 주세요.');
+        trackEvent('storage.write_failed', {
+          scope: 'year_widget_image',
+          reason: writeResult.reason ?? 'unknown',
+        });
+        return;
+      }
+      setSaveError(null);
     };
     reader.readAsDataURL(file);
   };
@@ -109,6 +120,7 @@ export default function YearProgressWidget({ currentDay, goalId }: YearProgressW
             <span className="caption-12 text-white font-bold">{(brightness * 100).toFixed(0)}%</span>
           </div>
         </div>
+        {saveError ? <p className="caption-12 mt-2 text-rose-200">{saveError}</p> : null}
       </div>
     </div>
   );

@@ -47,6 +47,16 @@ export const STORAGE_KEYS = {
 const CURRENT_STORAGE_SCHEMA_VERSION: StorageSchemaVersion = 3;
 const OUTBOX_MAX_ATTEMPTS = 15;
 
+export type StorageWriteFailReason =
+  | 'storage_unavailable'
+  | 'serialization_failed'
+  | 'write_failed';
+
+export interface StorageWriteResult {
+  success: boolean;
+  reason?: StorageWriteFailReason;
+}
+
 function canUseStorage(): boolean {
   return typeof window !== 'undefined' && !!window.localStorage;
 }
@@ -71,13 +81,24 @@ export function getItemString(key: string): string | null {
   }
 }
 
-export function setItemString(key: string, value: string): void {
-  if (!canUseStorage()) return;
+export function setItemString(key: string, value: string): StorageWriteResult {
+  if (!canUseStorage()) {
+    return {
+      success: false,
+      reason: 'storage_unavailable',
+    };
+  }
 
   try {
     window.localStorage.setItem(key, value);
+    return {
+      success: true,
+    };
   } catch {
-    // Ignore storage write failures.
+    return {
+      success: false,
+      reason: 'write_failed',
+    };
   }
 }
 
@@ -85,8 +106,15 @@ export function getItemJSON<T>(key: string): T | null {
   return safeParseJSON<T>(getItemString(key));
 }
 
-export function setItemJSON<T>(key: string, value: T): void {
-  setItemString(key, JSON.stringify(value));
+export function setItemJSON<T>(key: string, value: T): StorageWriteResult {
+  try {
+    return setItemString(key, JSON.stringify(value));
+  } catch {
+    return {
+      success: false,
+      reason: 'serialization_failed',
+    };
+  }
 }
 
 export function removeItem(key: string): void {
