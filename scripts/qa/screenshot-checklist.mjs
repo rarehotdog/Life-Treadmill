@@ -195,6 +195,7 @@ function renderMarkdownReport(report) {
   lines.push('- [ ] Home/TechTree/Progress/Profile visible in each viewport');
   lines.push('- [ ] Energy/Voice/Future/Share/Failure modal open and close');
   lines.push('- [ ] Progress Decision Log card visible and detail sheet opens');
+  lines.push('- [ ] Decision Log 14/30d toggle + search + filters render and no-match empty-state works');
   lines.push('- [ ] Progress Sync Reliability card and retry CTA visible');
   lines.push('- [ ] Top system bar and bottom navigation visible');
   lines.push('- [ ] No horizontal overflow');
@@ -515,6 +516,77 @@ async function runViewportChecks(browser, baseUrl, outputRoot, width) {
         );
 
         if (decisionLogSectionCount > 0) {
+          const decisionLogSearchCount = await page
+            .locator('[data-testid="decision-log-search"]')
+            .count();
+          pushCheck(
+            'decision log search input visible',
+            decisionLogSearchCount > 0,
+            decisionLogSearchCount > 0 ? '' : 'search input missing',
+          );
+
+          const window14Count = await page
+            .locator('[data-testid="decision-log-window-14"]')
+            .count();
+          pushCheck(
+            'decision log window 14 toggle visible',
+            window14Count > 0,
+            window14Count > 0 ? '' : '14-day toggle missing',
+          );
+
+          const window30Count = await page
+            .locator('[data-testid="decision-log-window-30"]')
+            .count();
+          pushCheck(
+            'decision log window 30 toggle visible',
+            window30Count > 0,
+            window30Count > 0 ? '' : '30-day toggle missing',
+          );
+
+          const validationFilterCount = await page
+            .locator('[data-testid="decision-log-validation-needs-review"]')
+            .count();
+          pushCheck(
+            'decision log validation filter visible',
+            validationFilterCount > 0,
+            validationFilterCount > 0 ? '' : 'validation filter missing',
+          );
+
+          const statusFilterCount = await page
+            .locator('[data-testid="decision-log-status-delayed"]')
+            .count();
+          pushCheck(
+            'decision log status filter visible',
+            statusFilterCount > 0,
+            statusFilterCount > 0 ? '' : 'status filter missing',
+          );
+
+          if (decisionLogSearchCount > 0) {
+            const decisionSearchInput = page
+              .locator('[data-testid="decision-log-search"]')
+              .first();
+            await decisionSearchInput.fill('@@no-match-query@@');
+            await page.waitForTimeout(WAIT_SHORT_MS);
+            const emptyAfterSearch = await page
+              .locator('[data-testid="decision-log-empty"]')
+              .count();
+            pushCheck(
+              'decision log search no-match state',
+              emptyAfterSearch > 0,
+              emptyAfterSearch > 0 ? '' : 'empty-state not shown after no-match query',
+            );
+
+            const resetFilterButton = page
+              .locator('[data-testid="decision-log-reset-filters"]')
+              .first();
+            if ((await resetFilterButton.count()) > 0) {
+              await resetFilterButton.click();
+            } else {
+              await decisionSearchInput.fill('');
+            }
+            await page.waitForTimeout(WAIT_SHORT_MS);
+          }
+
           const decisionLogItem = page.locator('[data-testid="decision-log-item"]').first();
           const decisionLogItemCount = await decisionLogItem.count();
           const decisionLogEmptyCount = await page

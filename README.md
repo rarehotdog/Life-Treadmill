@@ -60,7 +60,7 @@ LTR는 Context → Think → Action 루프를 고정합니다.
 | --- | --- | --- |
 | Home | 오늘의 퀘스트, AI Insight, 에너지/음성/공유 진입 | 개인화 카드 우선순위 고도화 |
 | TechTree | 진행 상태 반영, 실패 시 reroute | 노드별 설명/근거 강화 |
-| Progress | DQI Breakdown, Decision Log(14일), Sync Reliability | Decision Log v1.1(필터/검색/기간 전환) |
+| Progress | DQI Breakdown, Decision Log v1.1(14/30일·검색·필터), Sync Reliability | Decision Log v1.2(회고 액션 연결) |
 | Profile | 사용자/목표 정보 및 커스터마이징 진입 | 계정/권한 관리 UI 보강 |
 | Reliability | Outbox + 재시도 + sync diagnostics | Sync Reliability v1.1(드레인 이력 상세/자동 복구 안내) |
 | Quality Ops | Screenshot QA, GoldenSet, 문서화된 SLO/Runbook | CI 기반 실캡처 자동화 확대 |
@@ -252,9 +252,9 @@ src/
 - [Gemini Prompts](docs/GEMINI_PROMPTS.md)
 
 ## Roadmap (다음 2개 이터레이션)
-1. **Decision Log v1.1**
-- 기간 전환(14/30일), 필터(유효/리뷰 필요), 검색 강화
+1. **Decision Log v1.2**
 - 회고 액션(재시도/다음날 반영) 연결
+- validation reason 기반 개선 제안 자동 생성
 
 2. **Sync Reliability v1.1**
 - 드레인 이력 상세 표시

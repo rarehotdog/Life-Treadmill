@@ -220,7 +220,7 @@ export function useAppOrchestrator(): UseAppOrchestratorResult {
   const completedCount = todayQuests.filter((quest) => quest.completed).length;
   const totalCount = todayQuests.length;
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-  const decisionLogWindowDays = 14;
+  const decisionLogWindowDays = 30;
 
   const bootstrapGuardRef = useRef(false);
   const aiMessageTimerRef = useRef<number | null>(null);

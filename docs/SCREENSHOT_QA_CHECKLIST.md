@@ -26,6 +26,8 @@ npm run qa:screenshots
 - Modal: `Energy`, `Voice`, `Future`, `Share`, `Failure`
 - Progress 확장:
   - `Decision Log` 카드 존재
+  - Decision Log `14일/30일` 토글, 검색 인풋, validation/status 필터 존재
+  - 검색 no-match 시 empty-state 노출 + 필터 초기화 동작
   - Decision item 탭 시 `DecisionLogDetailSheet` 렌더/닫힘
   - `Sync Reliability` 카드 + `지금 동기화` 버튼 존재
 - Layout guard:
