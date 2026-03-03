@@ -1,0 +1,35 @@
+name: Unmyeong Snap Staging Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Staging URL (e.g. https://unmyeong-snap-staging.vercel.app)"
+        required: true
+        type: string
+
+jobs:
+  staging-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/unmyeong-snap/package-lock.json
+
+      - name: Install app deps
+        working-directory: apps/unmyeong-snap
+        run: npm ci
+
+      - name: Run staging analytics validation
+        working-directory: apps/unmyeong-snap
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+        run: npm run analytics:staging:check
